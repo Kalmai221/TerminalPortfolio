@@ -33,7 +33,7 @@ body {
   
   #terminal, #boot-sequence {
     width: 95%;
-    height: calc(100vh - 10px);
+    height: calc(100vh - 60px);
     padding: 8px 10px;
   }
   
@@ -58,7 +58,7 @@ body {
   
   #terminal, #boot-sequence {
     width: 98%;
-    height: calc(100vh - 4px);
+    height: calc(100vh - 80px);
     padding: 5px 8px;
   }
   
