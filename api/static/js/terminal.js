@@ -93,7 +93,7 @@ const bootSequence = [
   { text: "✓ Contact system", delay: 150, class: "boot-ok" },
   { text: "", delay: 300 },
   { text: "System ready.", delay: 200, class: "boot-ok" },
-  { text: "Press any key to continue...", delay: 500, class: "boot-text" }
+  { text: "", delay: 300 }
 ];
 
 let bootIndex = 0;
@@ -116,13 +116,32 @@ function displayBootLine() {
     bootIndex++;
     setTimeout(displayBootLine, line.delay);
   } else {
-    // Boot sequence complete, wait for keypress
-    document.addEventListener('keydown', function bootComplete() {
+    // Boot sequence complete, show appropriate message and wait for interaction
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (navigator.maxTouchPoints > 0);
+    
+    const continueText = isMobile ? "Tap the screen to continue..." : "Press any key to continue...";
+    const span = document.createElement('span');
+    span.className = 'boot-text';
+    span.textContent = continueText;
+    bootOutput.appendChild(span);
+    bootOutput.appendChild(document.createTextNode('\n'));
+    bootOutput.scrollTop = bootOutput.scrollHeight;
+    
+    function bootComplete() {
       bootContainer.style.display = 'none';
       terminal.style.display = 'flex';
       input.focus();
       document.removeEventListener('keydown', bootComplete);
-    }, { once: true });
+      document.removeEventListener('touchstart', bootComplete);
+      document.removeEventListener('click', bootComplete);
+    }
+    
+    // Listen for both keyboard and touch/click events
+    document.addEventListener('keydown', bootComplete, { once: true });
+    document.addEventListener('touchstart', bootComplete, { once: true });
+    document.addEventListener('click', bootComplete, { once: true });
   }
 }
 
