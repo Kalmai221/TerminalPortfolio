@@ -18,4 +18,3 @@ export default function contact() {
     "• Roblox game development"
   ].join("\n");
 }
-wsq22w
