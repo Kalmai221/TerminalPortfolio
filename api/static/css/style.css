@@ -125,6 +125,13 @@ body {
   border: 1px solid #555555;
   transition: all 0.3s ease;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.github-icon {
+  flex-shrink: 0;
 }
 
 .github-link:hover {
