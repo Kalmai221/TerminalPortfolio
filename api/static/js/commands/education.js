@@ -5,7 +5,7 @@ export default function education() {
     "=============",
     "",
     "🏫 Current:",
-    "• College Student",
+    "• UK College Student",
     "• Field of Study: Information Technology",
     "• Year: 2",
     "",
