@@ -1,0 +1,12 @@
+run = "python api/index.py"
+entrypoint = "README.md"
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["python"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+exposeLocalhost = true

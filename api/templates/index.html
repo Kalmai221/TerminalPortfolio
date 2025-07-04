@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>KalOS Terminal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div id="boot-sequence" style="display: block;">
+        <pre id="boot-output"></pre>
+    </div>
+    
+    <div id="terminal" style="display: none;">
+        <pre id="output">Welcome to KalOS Terminal v1.01
+Type <span class="highlight">help</span> to see available commands.
+        </pre>
+
+      <div id="input-area">
+          <span class="prompt">user@ubuntu:~$</span>
+          <input type="text" id="commandInput" autofocus autocomplete="off" />
+      </div>
+  </div>
+    <script src="{{ url_for('static', filename='js/terminal.js') }}"></script>
+</body>
+</html>
