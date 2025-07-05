@@ -5,7 +5,7 @@ export default function whoami() {
     "Name: Kal",
     "Role: College Student & Developer",
     "Location: United Kingdom (BST/GMT+1)",
-    "Skills: Python, JavaScript, Lua, HTML/CSS",
+    "Skills: Python, JavaScript, Luau (Roblox), HTML/CSS",
     "Interests: Roblox development, web development, learning new tech",
     "Status: 🟢 Open for Work",
     "-------------------------",
