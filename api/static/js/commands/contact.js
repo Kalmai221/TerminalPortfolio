@@ -1,4 +1,3 @@
-
 export default function contact() {
   return [
     "📧 Contact Information:",
@@ -7,6 +6,7 @@ export default function contact() {
     "📬 Email: Kal@roschol.uk",
     "🔗 GitHub: github.com/Kalmai221",
     "🎮 Roblox: @Kalmai221P",
+    "💬 Discord: @itzjustkal", 
     "",
     "📍 Location: United Kingdom (BST/GMT+1)",
     "⏰ Available: Weekdays 8AM-9PM BST",
