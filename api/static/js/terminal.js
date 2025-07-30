@@ -48,9 +48,18 @@ document.addEventListener("keydown", async (e) => {
   
   if (e.key === "Enter") {
     const cmd = currentInput.trim();
+    
+    // Remove the current cursor before adding new content
+    if (cursor) cursor.remove();
+    
+    // Show the command that was typed
+    if (currentLine) currentLine.textContent = currentInput;
+    
     if (!cmd) {
+      // Add new prompt line for empty command
       output.innerHTML += `\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
       updateCurrentLineRef();
+      currentInput = "";
       return;
     }
 
@@ -60,11 +69,11 @@ document.addEventListener("keydown", async (e) => {
     const response = await runCommand(cmd);
 
     if (response !== null) {
-      // Add the command and response to output, then new prompt line
+      // Add the response and new prompt line
       output.innerHTML += `\n${response}\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
     } else {
-      // For clear command, just add new prompt
-      output.innerHTML += `\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+      // For clear command, reset output completely
+      output.innerHTML = `Welcome to KalOS Terminal v1.01\nType <span class="highlight">help</span> to see available commands.\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
     }
     
     currentInput = "";
@@ -74,30 +83,30 @@ document.addEventListener("keydown", async (e) => {
     if (historyIndex > 0) {
       historyIndex--;
       currentInput = history[historyIndex];
-      currentLine.textContent = currentInput;
+      if (currentLine) currentLine.textContent = currentInput;
     }
     e.preventDefault();
   } else if (e.key === "ArrowDown") {
     if (historyIndex < history.length - 1) {
       historyIndex++;
       currentInput = history[historyIndex];
-      currentLine.textContent = currentInput;
+      if (currentLine) currentLine.textContent = currentInput;
     } else {
       historyIndex = history.length;
       currentInput = "";
-      currentLine.textContent = "";
+      if (currentLine) currentLine.textContent = "";
     }
     e.preventDefault();
   } else if (e.key === "Backspace") {
     if (currentInput.length > 0) {
       currentInput = currentInput.slice(0, -1);
-      currentLine.textContent = currentInput;
+      if (currentLine) currentLine.textContent = currentInput;
     }
     e.preventDefault();
   } else if (e.key.length === 1) {
     // Handle printable characters
     currentInput += e.key;
-    currentLine.textContent = currentInput;
+    if (currentLine) currentLine.textContent = currentInput;
     e.preventDefault();
   }
 });
