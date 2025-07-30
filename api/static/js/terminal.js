@@ -1,6 +1,6 @@
 const output = document.getElementById("output");
-let currentLine = document.getElementById("current-line");
-let cursor = document.getElementById("cursor");
+let currentLine;
+let cursor;
 const prompt = "user@ubuntu:~$";
 
 let availableCommands = [];
@@ -114,6 +114,14 @@ document.addEventListener("keydown", async (e) => {
 function updateCurrentLineRef() {
   currentLine = document.getElementById("current-line");
   cursor = document.getElementById("cursor");
+  
+  // Debug logging to help identify issues
+  if (!currentLine) {
+    console.error("current-line element not found");
+  }
+  if (!cursor) {
+    console.error("cursor element not found");
+  }
 }
 
 // Boot sequence
@@ -173,7 +181,10 @@ function displayBootLine() {
     function bootComplete() {
       bootContainer.style.display = 'none';
       terminal.style.display = 'flex';
-      updateCurrentLineRef();
+      // Wait a moment for the DOM to update before getting references
+      setTimeout(() => {
+        updateCurrentLineRef();
+      }, 10);
       document.removeEventListener('keydown', bootComplete);
       document.removeEventListener('touchstart', bootComplete);
       document.removeEventListener('click', bootComplete);
