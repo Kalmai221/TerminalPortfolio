@@ -1,6 +1,6 @@
 const output = document.getElementById("output");
-const currentLine = document.getElementById("current-line");
-const cursor = document.getElementById("cursor");
+let currentLine = document.getElementById("current-line");
+let cursor = document.getElementById("cursor");
 const prompt = "user@ubuntu:~$";
 
 let availableCommands = [];
@@ -60,8 +60,7 @@ document.addEventListener("keydown", async (e) => {
     const response = await runCommand(cmd);
 
     if (response !== null) {
-      // Remove current cursor and add the command to output
-      cursor.remove();
+      // Add the command and response to output, then new prompt line
       output.innerHTML += `\n${response}\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
     } else {
       // For clear command, just add new prompt
@@ -104,12 +103,8 @@ document.addEventListener("keydown", async (e) => {
 });
 
 function updateCurrentLineRef() {
-  const newCurrentLine = document.getElementById("current-line");
-  const newCursor = document.getElementById("cursor");
-  if (newCurrentLine && newCursor) {
-    currentLine = newCurrentLine;
-    cursor = newCursor;
-  }
+  currentLine = document.getElementById("current-line");
+  cursor = document.getElementById("cursor");
 }
 
 // Boot sequence
