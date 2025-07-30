@@ -49,10 +49,13 @@ document.addEventListener("keydown", async (e) => {
   if (e.key === "Enter") {
     const cmd = currentInput.trim();
     
-    // Remove the current cursor before adding new content
-    if (cursor) cursor.remove();
+    // Remove ALL existing current-line and cursor elements
+    const allCurrentLines = document.querySelectorAll('#current-line');
+    const allCursors = document.querySelectorAll('#cursor');
+    allCurrentLines.forEach(el => el.remove());
+    allCursors.forEach(el => el.remove());
     
-    // Show the command that was typed
+    // Show the command that was typed in the current line
     if (currentLine) currentLine.textContent = currentInput;
     
     if (!cmd) {
@@ -83,6 +86,7 @@ document.addEventListener("keydown", async (e) => {
     if (historyIndex > 0) {
       historyIndex--;
       currentInput = history[historyIndex];
+      updateCurrentLineRef();
       if (currentLine) currentLine.textContent = currentInput;
     }
     e.preventDefault();
@@ -90,22 +94,26 @@ document.addEventListener("keydown", async (e) => {
     if (historyIndex < history.length - 1) {
       historyIndex++;
       currentInput = history[historyIndex];
+      updateCurrentLineRef();
       if (currentLine) currentLine.textContent = currentInput;
     } else {
       historyIndex = history.length;
       currentInput = "";
+      updateCurrentLineRef();
       if (currentLine) currentLine.textContent = "";
     }
     e.preventDefault();
   } else if (e.key === "Backspace") {
     if (currentInput.length > 0) {
       currentInput = currentInput.slice(0, -1);
+      updateCurrentLineRef();
       if (currentLine) currentLine.textContent = currentInput;
     }
     e.preventDefault();
   } else if (e.key.length === 1) {
     // Handle printable characters
     currentInput += e.key;
+    updateCurrentLineRef();
     if (currentLine) currentLine.textContent = currentInput;
     e.preventDefault();
   }
