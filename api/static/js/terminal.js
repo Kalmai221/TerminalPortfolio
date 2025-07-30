@@ -1,10 +1,12 @@
-const input = document.getElementById("commandInput");
 const output = document.getElementById("output");
+const currentLine = document.getElementById("current-line");
+const cursor = document.getElementById("cursor");
 const prompt = "user@ubuntu:~$";
 
 let availableCommands = [];
 let history = [];
 let historyIndex = -1;
+let currentInput = "";
 
 async function loadCommands() {
   try {
@@ -40,40 +42,75 @@ async function runCommand(cmd) {
 }
 
 
-input.addEventListener("keydown", async (e) => {
+document.addEventListener("keydown", async (e) => {
+  // Only handle input when terminal is visible
+  if (document.getElementById("terminal").style.display === "none") return;
+  
   if (e.key === "Enter") {
-    const cmd = input.value.trim();
-    if (!cmd) return;
+    const cmd = currentInput.trim();
+    if (!cmd) {
+      output.innerHTML += `\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+      updateCurrentLineRef();
+      return;
+    }
 
     history.push(cmd);
     historyIndex = history.length;
-
-    input.value = "";
     
     const response = await runCommand(cmd);
 
     if (response !== null) {
-      output.innerText += `\n${prompt} ${cmd}\n${response}`;
+      // Remove current cursor and add the command to output
+      cursor.remove();
+      output.innerHTML += `\n${response}\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+    } else {
+      // For clear command, just add new prompt
+      output.innerHTML += `\n<span class="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
     }
-
+    
+    currentInput = "";
+    updateCurrentLineRef();
     output.scrollTo({ top: output.scrollHeight, behavior: "smooth" });
   } else if (e.key === "ArrowUp") {
     if (historyIndex > 0) {
       historyIndex--;
-      input.value = history[historyIndex];
+      currentInput = history[historyIndex];
+      currentLine.textContent = currentInput;
     }
     e.preventDefault();
   } else if (e.key === "ArrowDown") {
     if (historyIndex < history.length - 1) {
       historyIndex++;
-      input.value = history[historyIndex];
+      currentInput = history[historyIndex];
+      currentLine.textContent = currentInput;
     } else {
       historyIndex = history.length;
-      input.value = "";
+      currentInput = "";
+      currentLine.textContent = "";
     }
+    e.preventDefault();
+  } else if (e.key === "Backspace") {
+    if (currentInput.length > 0) {
+      currentInput = currentInput.slice(0, -1);
+      currentLine.textContent = currentInput;
+    }
+    e.preventDefault();
+  } else if (e.key.length === 1) {
+    // Handle printable characters
+    currentInput += e.key;
+    currentLine.textContent = currentInput;
     e.preventDefault();
   }
 });
+
+function updateCurrentLineRef() {
+  const newCurrentLine = document.getElementById("current-line");
+  const newCursor = document.getElementById("cursor");
+  if (newCurrentLine && newCursor) {
+    currentLine = newCurrentLine;
+    cursor = newCursor;
+  }
+}
 
 // Boot sequence
 const bootSequence = [
@@ -132,7 +169,7 @@ function displayBootLine() {
     function bootComplete() {
       bootContainer.style.display = 'none';
       terminal.style.display = 'flex';
-      input.focus();
+      updateCurrentLineRef();
       document.removeEventListener('keydown', bootComplete);
       document.removeEventListener('touchstart', bootComplete);
       document.removeEventListener('click', bootComplete);
