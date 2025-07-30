@@ -1,6 +1,6 @@
 const output = document.getElementById("output");
-let currentLine;
-let cursor;
+let currentLine = null;
+let cursor = null;
 const prompt = "user@ubuntu:~$";
 
 let availableCommands = [];
@@ -202,3 +202,10 @@ displayBootLine();
 
 // Load commands list on startup
 loadCommands();
+
+// Initialize references when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    updateCurrentLineRef();
+  }, 100);
+});
