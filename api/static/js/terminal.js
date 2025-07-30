@@ -49,10 +49,8 @@ document.addEventListener("keydown", async (e) => {
   if (e.key === "Enter") {
     const cmd = currentInput.trim();
     
-    // Remove ALL existing current-line and cursor elements
-    const allCurrentLines = document.querySelectorAll('#current-line');
+    // Remove cursor but keep the command visible
     const allCursors = document.querySelectorAll('#cursor');
-    allCurrentLines.forEach(el => el.remove());
     allCursors.forEach(el => el.remove());
     
     // Show the command that was typed in the current line
