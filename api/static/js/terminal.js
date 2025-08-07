@@ -1,10 +1,12 @@
-const input = document.getElementById("commandInput");
 const output = document.getElementById("output");
+let currentLine = null;
+let cursor = null;
 const prompt = "user@ubuntu:~$";
 
 let availableCommands = [];
 let history = [];
 let historyIndex = -1;
+let currentInput = "";
 
 async function loadCommands() {
   try {
@@ -40,40 +42,119 @@ async function runCommand(cmd) {
 }
 
 
-input.addEventListener("keydown", async (e) => {
+document.addEventListener("keydown", async (e) => {
+  if (document.getElementById("terminal").style.display === "none") return;
+
   if (e.key === "Enter") {
-    const cmd = input.value.trim();
-    if (!cmd) return;
+    const cmd = currentInput.trim();
+
+    // Remove current input line and cursor (to avoid duplicates)
+    if (currentLine) currentLine.remove();
+    if (cursor) cursor.remove();
+
+    // Show the entered command as a static line
+    const executedLine = document.createElement("div");
+    executedLine.innerHTML = `<span class="prompt">${prompt}</span> ${cmd}`;
+    const existingPrompt = document.getElementById("prompt");
+    if (existingPrompt) existingPrompt.remove();
+    output.appendChild(executedLine);
+
+    // Handle empty input
+    if (!cmd) {
+      // Add new prompt line and cursor for next input
+      const newPrompt = document.createElement("div");
+      newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+      output.appendChild(newPrompt);
+      currentInput = "";
+      updateCurrentLineRef();
+      output.scrollTop = output.scrollHeight;
+      return;
+    }
 
     history.push(cmd);
     historyIndex = history.length;
 
-    input.value = "";
-    
+    // Run command and show output before prompt
     const response = await runCommand(cmd);
-
     if (response !== null) {
-      output.innerText += `\n${prompt} ${cmd}\n${response}`;
+      const responseLine = document.createElement("div");
+      responseLine.textContent = response;
+      output.appendChild(responseLine);
     }
 
-    output.scrollTo({ top: output.scrollHeight, behavior: "smooth" });
-  } else if (e.key === "ArrowUp") {
+    // Add new prompt line and cursor for next input
+    const newPrompt = document.createElement("div");
+    newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+    output.appendChild(newPrompt);
+
+    currentInput = "";
+    updateCurrentLineRef();
+
+    output.scrollTop = output.scrollHeight;
+  }
+
+
+  // Arrow Up (previous command)
+  if (e.key === "ArrowUp") {
     if (historyIndex > 0) {
       historyIndex--;
-      input.value = history[historyIndex];
+      currentInput = history[historyIndex];
     }
+    updateCurrentLineRef();
+    if (currentLine) currentLine.textContent = currentInput;
     e.preventDefault();
-  } else if (e.key === "ArrowDown") {
+    return;
+  }
+
+  // Arrow Down (next command)
+  if (e.key === "ArrowDown") {
     if (historyIndex < history.length - 1) {
       historyIndex++;
-      input.value = history[historyIndex];
+      currentInput = history[historyIndex];
     } else {
       historyIndex = history.length;
-      input.value = "";
+      currentInput = "";
+    }
+    updateCurrentLineRef();
+    if (currentLine) currentLine.textContent = currentInput;
+    e.preventDefault();
+    return;
+  }
+
+  // Backspace
+  if (e.key === "Backspace") {
+    if (currentInput.length > 0) {
+      currentInput = currentInput.slice(0, -1);
+      updateCurrentLineRef();
+      if (currentLine) currentLine.textContent = currentInput;
     }
     e.preventDefault();
+    return;
+  }
+
+  // Printable characters
+  if (e.key.length === 1) {
+    currentInput += e.key;
+    updateCurrentLineRef();
+    if (currentLine) currentLine.textContent = currentInput;
+    e.preventDefault();
+    return;
   }
 });
+
+
+function updateCurrentLineRef() {
+  currentLine = document.getElementById("current-line");
+  cursor = document.getElementById("cursor");
+
+  // Debug logging to help identify issues
+  if (!currentLine) {
+    console.error("current-line element not found");
+  }
+  if (!cursor) {
+    console.error("cursor element not found");
+  }
+}
 
 // Boot sequence
 const bootSequence = [
@@ -112,7 +193,7 @@ function displayBootLine() {
     bootOutput.appendChild(span);
     bootOutput.appendChild(document.createTextNode('\n'));
     bootOutput.scrollTop = bootOutput.scrollHeight;
-    
+
     bootIndex++;
     setTimeout(displayBootLine, line.delay);
   } else {
@@ -120,7 +201,7 @@ function displayBootLine() {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                      ('ontouchstart' in window) || 
                      (navigator.maxTouchPoints > 0);
-    
+
     const continueText = isMobile ? "Tap the screen to continue..." : "Press any key to continue...";
     const span = document.createElement('span');
     span.className = 'boot-text';
@@ -128,16 +209,19 @@ function displayBootLine() {
     bootOutput.appendChild(span);
     bootOutput.appendChild(document.createTextNode('\n'));
     bootOutput.scrollTop = bootOutput.scrollHeight;
-    
+
     function bootComplete() {
       bootContainer.style.display = 'none';
       terminal.style.display = 'flex';
-      input.focus();
+      // Wait a moment for the DOM to update before getting references
+      setTimeout(() => {
+        updateCurrentLineRef();
+      }, 10);
       document.removeEventListener('keydown', bootComplete);
       document.removeEventListener('touchstart', bootComplete);
       document.removeEventListener('click', bootComplete);
     }
-    
+
     // Listen for both keyboard and touch/click events
     document.addEventListener('keydown', bootComplete, { once: true });
     document.addEventListener('touchstart', bootComplete, { once: true });
@@ -150,3 +234,10 @@ displayBootLine();
 
 // Load commands list on startup
 loadCommands();
+
+// Initialize references when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(() => {
+    updateCurrentLineRef();
+  }, 100);
+});
