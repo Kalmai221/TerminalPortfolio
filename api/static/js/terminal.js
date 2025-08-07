@@ -156,26 +156,57 @@ function updateCurrentLineRef() {
   }
 }
 
-// Boot sequence
 const bootSequence = [
-  { text: "KalOS Boot Loader v2.1.4", delay: 100 },
-  { text: "", delay: 200 },
-  { text: "Initializing system...", delay: 300, class: "boot-loading" },
-  { text: "Loading kernel modules...", delay: 400, class: "boot-loading" },
-  { text: "✓ CPU: Intel Core i7-12700K", delay: 200, class: "boot-ok" },
-  { text: "✓ Memory: 32GB DDR4", delay: 150, class: "boot-ok" },
-  { text: "✓ Storage: 1TB NVMe SSD", delay: 150, class: "boot-ok" },
-  { text: "✓ Network: Ethernet Connected", delay: 200, class: "boot-ok" },
+  { text: "KalOS Boot Loader v2.1.4", delay: 150 },
+  { text: "Press [ESC] to enter setup", delay: 800, class: "boot-info" },
   { text: "", delay: 300 },
-  { text: "Starting portfolio services...", delay: 200, class: "boot-loading" },
-  { text: "✓ Terminal emulator", delay: 150, class: "boot-ok" },
-  { text: "✓ Command processor", delay: 150, class: "boot-ok" },
-  { text: "✓ Portfolio modules", delay: 150, class: "boot-ok" },
-  { text: "✓ Contact system", delay: 150, class: "boot-ok" },
+
+  // BIOS POST checks
+  { text: "Performing POST (Power-On Self-Test)...", delay: 500, class: "boot-loading" },
+  { text: "[ OK ] CPU: Intel Core i7-12700K", delay: 300, class: "boot-ok" },
+  { text: "[ OK ] Memory: 32GB DDR4 @ 3200MHz", delay: 300, class: "boot-ok" },
+  { text: "[ OK ] Storage: 1TB NVMe SSD", delay: 300, class: "boot-ok" },
+  { text: "[ OK ] Network Controller: Ethernet Connected", delay: 300, class: "boot-ok" },
+  { text: "[WARNING] RTC battery low, please replace soon.", delay: 600, class: "boot-warning" },
+
+  { text: "", delay: 400 },
+
+  // Kernel loading
+  { text: "Loading kernel modules:", delay: 500, class: "boot-loading" },
+  { text: " - usb-storage [ OK ]", delay: 200, class: "boot-ok" },
+  { text: " - nvme [ OK ]", delay: 200, class: "boot-ok" },
+  { text: " - e1000e (Ethernet driver) [ OK ]", delay: 200, class: "boot-ok" },
+  { text: " - snd_hda_intel (Audio driver) [ OK ]", delay: 200, class: "boot-ok" },
+
   { text: "", delay: 300 },
-  { text: "System ready.", delay: 200, class: "boot-ok" },
+
+  // Higher-level services
+  { text: "Starting system services...", delay: 600, class: "boot-loading" },
+  { text: " - Terminal emulator [ OK ]", delay: 200, class: "boot-ok" },
+  { text: " - Command processor [ OK ]", delay: 200, class: "boot-ok" },
+  { text: " - Portfolio modules [ OK ]", delay: 200, class: "boot-ok" },
+  { text: " - Contact system [ OK ]", delay: 200, class: "boot-ok" },
+
+  { text: "", delay: 400 },
+
+  { text: "System ready.", delay: 500, class: "boot-ok" },
   { text: "", delay: 300 }
 ];
+
+// For a nicer effect, we can add a little function to add some dynamic loading dots:
+function animateLoadingDots(element, maxDots = 3, interval = 400, duration = 3000) {
+  let dots = 0;
+  const start = Date.now();
+
+  const intervalId = setInterval(() => {
+    dots = (dots + 1) % (maxDots + 1);
+    element.textContent = element.textContent.replace(/\.*$/, '.'.repeat(dots));
+
+    if (Date.now() - start > duration) {
+      clearInterval(intervalId);
+    }
+  }, interval);
+}
 
 let bootIndex = 0;
 const bootOutput = document.getElementById("boot-output");
@@ -194,13 +225,21 @@ function displayBootLine() {
     bootOutput.appendChild(document.createTextNode('\n'));
     bootOutput.scrollTop = bootOutput.scrollHeight;
 
+    // If line has "boot-loading" class, animate dots
+    if (line.class === "boot-loading") {
+      animateLoadingDots(span);
+    }
+
     bootIndex++;
-    setTimeout(displayBootLine, line.delay);
+
+    // Randomize delay +/- 100ms for realism
+    const randomizedDelay = line.delay + (Math.random() * 200 - 100);
+    setTimeout(displayBootLine, Math.max(50, randomizedDelay));
   } else {
     // Boot sequence complete, show appropriate message and wait for interaction
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                     ('ontouchstart' in window) || 
-                     (navigator.maxTouchPoints > 0);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      ('ontouchstart' in window) ||
+      (navigator.maxTouchPoints > 0);
 
     const continueText = isMobile ? "Tap the screen to continue..." : "Press any key to continue...";
     const span = document.createElement('span');
@@ -211,18 +250,22 @@ function displayBootLine() {
     bootOutput.scrollTop = bootOutput.scrollHeight;
 
     function bootComplete() {
-      bootContainer.style.display = 'none';
-      terminal.style.display = 'flex';
-      // Wait a moment for the DOM to update before getting references
+      bootContainer.style.transition = "opacity 0.5s ease";
+      bootContainer.style.opacity = "0";
       setTimeout(() => {
-        updateCurrentLineRef();
-      }, 10);
+        bootContainer.style.display = 'none';
+        terminal.style.display = 'flex';
+        // Wait a moment for the DOM to update before getting references
+        setTimeout(() => {
+          updateCurrentLineRef();
+        }, 10);
+      }, 500);
+
       document.removeEventListener('keydown', bootComplete);
       document.removeEventListener('touchstart', bootComplete);
       document.removeEventListener('click', bootComplete);
     }
 
-    // Listen for both keyboard and touch/click events
     document.addEventListener('keydown', bootComplete, { once: true });
     document.addEventListener('touchstart', bootComplete, { once: true });
     document.addEventListener('click', bootComplete, { once: true });
@@ -231,6 +274,7 @@ function displayBootLine() {
 
 // Start boot sequence
 displayBootLine();
+
 
 // Load commands list on startup
 loadCommands();

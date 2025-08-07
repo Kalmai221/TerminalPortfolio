@@ -135,3 +135,27 @@ body {
   color: #ffffff;
   transform: translateY(-2px);
 }
+
+.boot-ok {
+  color: #8ae234; /* green */
+}
+
+.boot-warning {
+  color: #f57900; /* orange */
+}
+
+.boot-error {
+  color: #cc0000; /* red */
+}
+
+.boot-info {
+  color: #729fcf; /* blue */
+}
+
+.boot-loading {
+  color: #ad7fa8; /* purple */
+}
+
+.boot-text {
+  color: #8ae234;
+}
