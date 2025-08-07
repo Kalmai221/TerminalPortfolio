@@ -110,9 +110,9 @@ This project is open source and available under the MIT License.
 
 ## 📧 Contact
 
-- **Email**: Kal@roschol.com
+- **Email**: Kal@roschol.uk
 - **GitHub**: [@Kalmai221](https://github.com/Kalmai221)
-- **Location**: United Kingdom (BST/GMT+1)
+- **Location**: United Kingdom
 
 ---
 
