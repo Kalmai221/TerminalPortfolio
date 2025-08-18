@@ -29,20 +29,25 @@ async function runCommand(cmd) {
     return `Available commands:\n- ${availableCommands.join("\n- ")}`;
   }
 
+  if (cmd === "reload") {
+    await loadCommands();
+    return "Commands list reloaded.";
+  }
+
   if (!availableCommands.includes(cmd)) {
     return `bash: ${cmd}: command not found\nType 'help' for available commands.`;
   }
 
   try {
-    const module = await import(`./commands/${cmd}.js`);
+    const module = await import(`./commands/${cmd}.js?cacheBust=${Date.now()}`);
     return module.default();
   } catch (err) {
     return `Error loading command ${cmd}: ${err.message}`;
   }
 }
 
-
 document.addEventListener("keydown", async (e) => {
+  if (e.target === mobileInput) return; // ignore mobile input events here
   if (document.getElementById("terminal").style.display === "none") return;
 
   if (e.key === "Enter") {
@@ -66,7 +71,6 @@ document.addEventListener("keydown", async (e) => {
       newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
       output.appendChild(newPrompt);
       currentInput = "";
-      updateCurrentLineRef();
       output.scrollTop = output.scrollHeight;
       return;
     }
@@ -156,42 +160,68 @@ function updateCurrentLineRef() {
   }
 }
 
-const bootSequence = [
-  { text: "KalOS Boot Loader v2.1.4", delay: 150 },
+function getRandomWarnings(stage) {
+  const allWarnings = {
+    post: [
+      "[WARNING] RTC battery low, please replace soon.",
+      "[WARNING] Fan speed sensor failed.",
+      "[WARNING] Thermal sensor calibration required.",
+      "[WARNING] Optional module 'xyz' failed to initialize."
+    ],
+    kernel: [
+      "[WARNING] ACPI firmware update recommended.",
+      "[WARNING] USB device driver not responding.",
+      "[WARNING] NVMe module latency high.",
+      "[WARNING] Network driver initialization delayed."
+    ],
+    services: [
+      "[WARNING] Terminal emulator loaded with minor errors.",
+      "[WARNING] Command processor modules missing optional dependency.",
+      "[WARNING] Portfolio modules failed checksum.",
+      "[WARNING] Contact system cannot verify SSL certificate."
+    ]
+  };
+
+  const list = allWarnings[stage] || [];
+  // ~30% chance to show a warning
+  return Math.random() < 0.15 ? list[Math.floor(Math.random() * list.length)] : null;
+}
+
+// Define base boot lines
+const baseBootLines = [
+  { text: "KalOS Boot Loader v2.1.4", delay: 150, class: "boot-info" },
   { text: "Press [ESC] to enter setup", delay: 800, class: "boot-info" },
   { text: "", delay: 300 },
-
-  // BIOS POST checks
   { text: "Performing POST (Power-On Self-Test)...", delay: 500, class: "boot-loading" },
-  { text: "[ OK ] CPU: Intel Core i7-12700K", delay: 300, class: "boot-ok" },
-  { text: "[ OK ] Memory: 32GB DDR4 @ 3200MHz", delay: 300, class: "boot-ok" },
-  { text: "[ OK ] Storage: 1TB NVMe SSD", delay: 300, class: "boot-ok" },
-  { text: "[ OK ] Network Controller: Ethernet Connected", delay: 300, class: "boot-ok" },
-  { text: "[WARNING] RTC battery low, please replace soon.", delay: 600, class: "boot-warning" },
-
+  { text: "[ OK ] CPU: Intel Core i7-12700K", delay: 300, class: "boot-ok", stage: "post" },
+  { text: "[ OK ] Memory: 32GB DDR4 @ 3200MHz", delay: 300, class: "boot-ok", stage: "post" },
+  { text: "[ OK ] Storage: 1TB NVMe SSD", delay: 300, class: "boot-ok", stage: "post" },
+  { text: "[ OK ] Network Controller: Ethernet Connected", delay: 300, class: "boot-ok", stage: "post" },
   { text: "", delay: 400 },
-
-  // Kernel loading
-  { text: "Loading kernel modules:", delay: 500, class: "boot-loading" },
-  { text: " - usb-storage [ OK ]", delay: 200, class: "boot-ok" },
-  { text: " - nvme [ OK ]", delay: 200, class: "boot-ok" },
-  { text: " - e1000e (Ethernet driver) [ OK ]", delay: 200, class: "boot-ok" },
-  { text: " - snd_hda_intel (Audio driver) [ OK ]", delay: 200, class: "boot-ok" },
-
+  { text: "Loading kernel modules:", delay: 500, class: "boot-loading", stage: "kernel" },
+  { text: " - usb-storage [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
+  { text: " - nvme [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
+  { text: " - e1000e (Ethernet driver) [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
+  { text: " - snd_hda_intel (Audio driver) [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
   { text: "", delay: 300 },
-
-  // Higher-level services
-  { text: "Starting system services...", delay: 600, class: "boot-loading" },
-  { text: " - Terminal emulator [ OK ]", delay: 200, class: "boot-ok" },
-  { text: " - Command processor [ OK ]", delay: 200, class: "boot-ok" },
-  { text: " - Portfolio modules [ OK ]", delay: 200, class: "boot-ok" },
-  { text: " - Contact system [ OK ]", delay: 200, class: "boot-ok" },
-
+  { text: "Starting system services...", delay: 600, class: "boot-loading", stage: "services" },
+  { text: " - Terminal emulator [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
+  { text: " - Command processor [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
+  { text: " - Portfolio modules [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
+  { text: " - Contact system [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
   { text: "", delay: 400 },
-
   { text: "System ready.", delay: 500, class: "boot-ok" },
   { text: "", delay: 300 }
 ];
+
+// Build boot sequence with random warnings
+const bootSequence = [];
+baseBootLines.forEach(line => {
+  bootSequence.push(line);
+  const warning = getRandomWarnings(line.stage);
+  if (warning) bootSequence.push({ text: warning, delay: 400 + Math.random()*200, class: "boot-warning" });
+});
+
 
 // For a nicer effect, we can add a little function to add some dynamic loading dots:
 function animateLoadingDots(element, maxDots = 3, interval = 400, duration = 3000) {
@@ -212,6 +242,76 @@ let bootIndex = 0;
 const bootOutput = document.getElementById("boot-output");
 const bootContainer = document.getElementById("boot-sequence");
 const terminal = document.getElementById("terminal");
+
+// Only create one hidden input for mobile
+const mobileInput = document.createElement("input");
+mobileInput.type = "text";
+mobileInput.style.position = "absolute";
+mobileInput.style.opacity = 0;
+mobileInput.style.height = 0;
+mobileInput.style.width = 0;
+mobileInput.autocapitalize = "off";
+mobileInput.autocomplete = "off";
+mobileInput.autocorrect = "off";
+mobileInput.spellcheck = false;
+document.body.appendChild(mobileInput);
+
+// Focus hidden input on tap
+terminal.addEventListener("click", () => mobileInput.focus());
+terminal.addEventListener("touchstart", () => mobileInput.focus());
+
+mobileInput.addEventListener("input", (e) => {
+    const lastChar = e.data; // the most recent typed character
+    if (lastChar) {
+        currentInput += lastChar;  // append at end
+    } else {
+        // handle deletion/backspace
+        currentInput = mobileInput.value;
+    }
+    if (currentLine) currentLine.innerText = currentInput;
+});
+
+
+// Handle Enter only; let Backspace and typing be handled naturally by input
+mobileInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const cmd = currentInput.trim();
+
+    // Remove current input line
+    if (currentLine) currentLine.remove();
+    if (cursor) cursor.remove();
+
+    const executedLine = document.createElement("div");
+    executedLine.innerHTML = `<span class="prompt">${prompt}</span> ${cmd}`;
+    const existingPrompt = document.getElementById("prompt");
+    if (existingPrompt) existingPrompt.remove();
+    output.appendChild(executedLine);
+
+    if (cmd) {
+      history.push(cmd);
+      historyIndex = history.length;
+    }
+
+    runCommand(cmd).then(response => {
+      if (response) {
+        const responseLine = document.createElement("div");
+        responseLine.textContent = response;
+        output.appendChild(responseLine);
+      }
+
+      // Add new prompt
+      const newPrompt = document.createElement("div");
+      newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+      output.appendChild(newPrompt);
+
+      currentInput = "";
+      mobileInput.value = "";
+      updateCurrentLineRef();
+      output.scrollTop = output.scrollHeight;
+    });
+  }
+});
 
 function displayBootLine() {
   if (bootIndex < bootSequence.length) {

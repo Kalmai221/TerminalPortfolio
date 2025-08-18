@@ -1,0 +1,24 @@
+.site-container {
+  font-family: Arial, sans-serif;
+  color: black; /* default text color */
+  padding: 20px;
+}
+
+.site-container h2 {
+  color: #222; /* heading color */
+  font-size: 2em;
+}
+
+.site-container p {
+  color: #333;
+}
+
+.site-container .work-grid {
+  display: flex;
+  gap: 10px;
+}
+
+.site-container .work-item img {
+  width: 200px;
+  height: auto;
+}
