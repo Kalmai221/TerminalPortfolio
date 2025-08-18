@@ -41,10 +41,8 @@ export default async function openBrowserWithInstall(path = "/") {
       await new Promise(res => setTimeout(res, 400 + Math.random() * 400));
     }
 
-    let progress = 0;
-    const total = 20;
-    for (let i = 0; i <= total; i++) {
-      progress = Math.floor((i / total) * 100);
+    for (let i = 0; i <= 20; i++) {
+      const progress = Math.floor((i / 20) * 100);
       line.textContent = `Installing ${pkg}... [${progress}%]`;
       container.scrollTop = container.scrollHeight;
       await new Promise(res => setTimeout(res, 80 + Math.random() * 80));
@@ -67,12 +65,12 @@ export default async function openBrowserWithInstall(path = "/") {
   await new Promise(res => setTimeout(res, 600));
 
   // ---- BROWSER UI ----
-  const existing = document.querySelector(".fake-browser");
-  if (existing) existing.remove();
-
-  const browser = document.createElement("div");
-  browser.className = "fake-browser fullscreen";
-  document.body.appendChild(browser);
+  let browser = document.querySelector(".fake-browser");
+  if (!browser) {
+    browser = document.createElement("div");
+    browser.className = "fake-browser fullscreen";
+    document.body.appendChild(browser);
+  }
 
   browser.innerHTML = `
     <div class="browser-header">
@@ -88,29 +86,91 @@ export default async function openBrowserWithInstall(path = "/") {
     <div class="browser-content">Loading...</div>
   `;
 
-  // ---- BROWSER CONTROLS ----
-  const closeBtn = browser.querySelector("#close-browser");
-  if (closeBtn) closeBtn.addEventListener("click", () => browser.remove());
-
-  const reloadBtn = browser.querySelector("#reload-browser");
-  if (reloadBtn) reloadBtn.addEventListener("click", () => openBrowserWithInstall(path));
-
-  // Optional: maximize/minimize
-  const maximizeBtn = browser.querySelector("#maximize-browser");
-  if (maximizeBtn) maximizeBtn.addEventListener("click", () => browser.classList.toggle("fullscreen"));
-
   const contentDiv = browser.querySelector(".browser-content");
   const urlBar = browser.querySelector(".url-bar");
   const tabsDiv = browser.querySelector(".browser-tabs");
 
+  // ---- BROWSER CONTROLS ----
+  browser.querySelector("#close-browser")?.addEventListener("click", () => browser.remove());
+  // Minimize button
+  const minimizeBtn = browser.querySelector("#minimize-browser");
+  minimizeBtn.addEventListener("click", () => {
+    browser.classList.toggle("minimized");
+    browser.style.position = browser.classList.contains("minimized") ? "absolute" : "";
+    browser.style.width = browser.classList.contains("minimized") ? "300px" : "100vw";
+    browser.style.height = browser.classList.contains("minimized") ? "200px" : "100vh";
+    browser.style.top = browser.classList.contains("minimized") ? "50px" : "";
+    browser.style.left = browser.classList.contains("minimized") ? "50px" : "";
+  });
+
+  // Drag handler
+  const header = browser.querySelector(".browser-header");
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  header.addEventListener("mousedown", (e) => {
+    if (!browser.classList.contains("minimized")) return; // only drag when minimized
+    isDragging = true;
+    offsetX = e.clientX - browser.offsetLeft;
+    offsetY = e.clientY - browser.offsetTop;
+    browser.style.transition = "none"; // disable transitions while dragging
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    browser.style.left = `${e.clientX - offsetX}px`;
+    browser.style.top = `${e.clientY - offsetY}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!isDragging) return;
+    isDragging = false;
+    browser.style.transition = ""; // restore transitions
+  });
+
+
+  // ---- Smooth Reload ----
+  browser.querySelector("#reload-browser")?.addEventListener("click", async () => {
+    contentDiv.style.transition = "opacity 0.3s ease";
+    contentDiv.style.opacity = 0;        // fade out
+    contentDiv.innerHTML = "";            // clear previous content
+    contentDiv.style.background = "#fff"; // white screen
+
+    const spinner = document.createElement("div");
+    spinner.textContent = "⏳ Reloading...";
+    spinner.style.textAlign = "center";
+    spinner.style.padding = "50px 0";
+    contentDiv.appendChild(spinner);
+
+    await new Promise(res => setTimeout(res, 400)); // brief delay for UX
+
+    // Reload page content
+    await loadBrowserContent(path, browser);
+
+    // fade in
+    contentDiv.style.opacity = 1;
+    contentDiv.style.background = "transparent";
+  });
+
   // ---- LOAD WEBSITE ----
+  await loadBrowserContent(path, browser);
+
+  return null;
+}
+
+// ---- Helper function to load page content ----
+async function loadBrowserContent(path, browser) {
+  const contentDiv = browser.querySelector(".browser-content");
+  const urlBar = browser.querySelector(".url-bar");
+  const tabsDiv = browser.querySelector(".browser-tabs");
+
   const parts = path.split("/").filter(p => p);
   const folder = parts[0] || "index";
   const page = parts[1] || "index";
   urlBar.textContent = `http://127.0.0.1:8080/${folder}/${page}`;
 
   try {
-    // Fetch manifest for tabs
     const manifestRes = await fetch(`/static/browsersites/${folder}/manifest.json`);
     let pages = ["index"];
     if (manifestRes.ok) pages = await manifestRes.json();
@@ -124,26 +184,20 @@ export default async function openBrowserWithInstall(path = "/") {
       tabsDiv.appendChild(tab);
     });
 
-    // Load HTML content inside container to avoid CSS bleed
     const htmlRes = await fetch(`/static/browsersites/${folder}/${page}.html`);
     if (!htmlRes.ok) throw new Error("Page not found");
     const html = await htmlRes.text();
     contentDiv.innerHTML = `<div class="site-container">${html}</div>`;
 
-    // Load website CSS scoped inside container
     const cssLink = document.createElement("link");
     cssLink.rel = "stylesheet";
     cssLink.href = `/static/browsersites/${folder}/style.css`;
     document.head.appendChild(cssLink);
 
-    // Load website JS
     const jsScript = document.createElement("script");
     jsScript.src = `/static/browsersites/${folder}/script.js`;
     document.body.appendChild(jsScript);
-
   } catch (err) {
     contentDiv.textContent = "Error loading page: " + err.message;
   }
-
-  return null;
 }

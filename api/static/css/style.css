@@ -159,19 +159,37 @@ body {
 .boot-text {
   color: #8ae234;
 }
-.fake-browser.fullscreen {
+
+.fake-browser {
+  all: initial; /* reset inherited styles */
+  font-family: "Ubuntu", sans-serif;
+  color: #000;
+  z-index: 2000;
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #fff;
   display: flex;
   flex-direction: column;
-  font-family: "Ubuntu", sans-serif;
-  z-index: 2000;
-  border: none;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid #888;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  touch-action: none; /* allows touch drag */
 }
+
+.fake-browser.minimized {
+  width: 90%;
+  max-width: 400px;
+  height: 35%;
+  max-height: 300px;
+  top: 10%;
+  left: 5%;
+  cursor: grab;
+}
+
 
 /* Browser top bar */
 .browser-header {
