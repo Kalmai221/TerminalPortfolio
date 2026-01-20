@@ -165,7 +165,7 @@ export default async function openBrowserWithInstall(path = "/") {
           <div class="error-page">
             <div class="error-icon">🌐⚠️</div>
             <h1>Server Not Found</h1>
-            <p>KalBrowser can’t find the server at <strong>${url}</strong>.</p>
+            <p>KalBrowser can’t find the server at <strong>\${url}</strong>.</p>
             <ul>
               <li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com</li>
               <li>If you are unable to load any pages, check your computer’s network connection.</li>
@@ -217,25 +217,25 @@ async function loadBrowserContent(path, browser) {
   const page = parts[1] || "index";
   
   if (urlInput) {
-    urlInput.value = `http://localhost:8080/${folder}/${page}`;
+    urlInput.value = `http://localhost:8080/\${folder}/\${page}`;
   }
 
   try {
-    const htmlRes = await fetch(`/static/browsersites/${folder}/${page}.html`);
+    const htmlRes = await fetch(`/static/browsersites/\${folder}/\${page}.html`);
     if (!htmlRes.ok) throw new Error("Page not found");
     const html = await htmlRes.text();
-    contentDiv.innerHTML = `<div class="site-container">${html}</div>`;
+    contentDiv.innerHTML = `<div class="site-container">\${html}</div>`;
 
     // Re-inject assets
     const cssLink = document.createElement("link");
     cssLink.rel = "stylesheet";
-    cssLink.href = `/static/browsersites/${folder}/style.css`;
+    cssLink.href = `/static/browsersites/\${folder}/style.css`;
     document.head.appendChild(cssLink);
 
     const jsScript = document.createElement("script");
-    jsScript.src = `/static/browsersites/${folder}/script.js`;
+    jsScript.src = `/static/browsersites/\${folder}/script.js`;
     document.body.appendChild(jsScript);
   } catch (err) {
-    contentDiv.innerHTML = \`<div style="padding: 20px; color: red;">Error loading page: \${err.message}</div>\`;
+    contentDiv.innerHTML = `<div style="padding: 20px; color: red;">Error loading page: \${err.message}</div>`;
   }
 }
