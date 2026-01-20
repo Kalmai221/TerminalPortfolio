@@ -1,216 +1,328 @@
-export default async function openBrowserWithInstall(path = "/") {
-  const output = document.getElementById("output");
-  const parts = path.split("/").filter(p => p);
-  const folder = parts[0] || "index";
-  const page = parts[1] || "index";
+// browser.js
 
-  // ---- INSTALL SIMULATION ----
-  const packages = ["xorg", "lightdm", "kalbrowser", "web-server"];
-  const installedPackages = ["xorg"];
-  const container = document.createElement("div");
-  container.className = "command-output";
-  output.appendChild(container);
+// State to track if we've already "installed" the browser in this session
+let isBrowserInstalled = false;
 
-  const depMsgs = ["Checking dependencies...", "Retrieving package metadata...", "Analyzing system state..."];
-  for (let msg of depMsgs) {
-    const line = document.createElement("div");
-    line.textContent = msg;
-    container.appendChild(line);
-    container.scrollTop = container.scrollHeight;
-    await new Promise(res => setTimeout(res, 500 + Math.random() * 500));
-  }
+export default async function openBrowser(path = "/") {
+    const output = document.getElementById("output");
 
-  for (let pkg of packages) {
-    const line = document.createElement("div");
-    container.appendChild(line);
-
-    if (installedPackages.includes(pkg)) {
-      line.textContent = "Package " + pkg + " is already installed. [OK]";
-      container.scrollTop = container.scrollHeight;
-      await new Promise(res => setTimeout(res, 400 + Math.random() * 400));
-      continue;
+    // 1. Install Simulation (Runs only once)
+    if (!isBrowserInstalled) {
+        await runInstallationSimulation(output);
+        isBrowserInstalled = true;
     }
 
-    const steps = [
-      "Preparing to unpack " + pkg + "...",
-      "Unpacking " + pkg + "...",
-      "Configuring " + pkg + "...",
-      "Setting up " + pkg + "..."
-    ];
-
-    for (let step of steps) {
-      line.textContent = step;
-      container.scrollTop = container.scrollHeight;
-      await new Promise(res => setTimeout(res, 400 + Math.random() * 400));
-    }
-
-    for (let i = 0; i <= 20; i++) {
-      const progress = Math.floor((i / 20) * 100);
-      line.textContent = "Installing " + pkg + "... [" + progress + "%]";
-      container.scrollTop = container.scrollHeight;
-      await new Promise(res => setTimeout(res, 80 + Math.random() * 80));
-    }
-
-    line.textContent = "Installing " + pkg + "... [OK]";
-    installedPackages.push(pkg);
-  }
-
-  const serverLine = document.createElement("div");
-  serverLine.innerHTML = '<span style="color: #8ae234">[  OK  ]</span> Starting web server at http://127.0.0.1:8080';
-  container.appendChild(serverLine);
-  container.scrollTop = container.scrollHeight;
-  await new Promise(res => setTimeout(res, 600));
-
-  const logMsgs = [
-    "[" + new Date().toLocaleTimeString() + "] INFO: Loading assets...",
-    "[" + new Date().toLocaleTimeString() + "] DEBUG: Connecting to database...",
-    "[" + new Date().toLocaleTimeString() + "] INFO: Server listening on port 8080",
-    "[" + new Date().toLocaleTimeString() + "] GET /static/browsersites/" + folder + "/" + page + ".html 200 OK",
-    "[" + new Date().toLocaleTimeString() + "] GET /static/browsersites/" + folder + "/style.css 200 OK",
-    "[" + new Date().toLocaleTimeString() + "] GET /static/browsersites/" + folder + "/script.js 200 OK"
-  ];
-
-  for (let msg of logMsgs) {
-    const line = document.createElement("div");
-    line.style.color = "#ccc";
-    line.style.fontSize = "0.9em";
-    line.textContent = msg;
-    container.appendChild(line);
-    container.scrollTop = container.scrollHeight;
-    await new Promise(res => setTimeout(res, 100 + Math.random() * 200));
-  }
-
-  const launchLine = document.createElement("div");
-  launchLine.textContent = "Launching KalBrowser...";
-  container.appendChild(launchLine);
-  container.scrollTop = container.scrollHeight;
-  await new Promise(res => setTimeout(res, 800));
-
-  let browser = document.querySelector(".fake-browser");
-  if (!browser) {
-    browser = document.createElement("div");
-    browser.className = "fake-browser fullscreen";
-    document.body.appendChild(browser);
-  }
-
-  const terminalElem = document.getElementById("terminal");
-  if (terminalElem) terminalElem.style.display = "none";
-
-  browser.innerHTML = `
-    <div class="browser-header">
-      <div class="browser-tabs">
-        <div class="tab-list">
-           <div class="tab active">
-             <span class="tab-icon">✨</span>
-             <span class="tab-label">` + page + `</span>
-             <span class="tab-close">×</span>
-           </div>
-           <div class="new-tab-btn">+</div>
-        </div>
-      </div>
-      <div class="browser-toolbar">
-        <div class="browser-nav">
-          <button id="back-browser" class="toolbar-btn">←</button>
-          <button id="forward-browser">→</button>
-          <button id="reload-browser" class="toolbar-btn">⟳</button>
-        </div>
-        <div class="url-bar-container">
-          <input type="text" id="url-input" class="url-input" value="http://localhost:8080/` + folder + `/` + page + `">
-          <div class="url-actions">
-            <span class="url-star">☆</span>
-          </div>
-        </div>
-        <div class="browser-menu">
-          <button id="inspect-browser" class="toolbar-btn" title="Inspect Element">🛠</button>
-          <button id="close-browser-btn" class="toolbar-btn close">×</button>
-        </div>
-      </div>
-    </div>
-    <div class="browser-content">Loading...</div>
-  `;
-
-  const contentDiv = browser.querySelector(".browser-content");
-  const urlInput = browser.querySelector("#url-input");
-
-  browser.querySelector("#close-browser-btn")?.addEventListener("click", () => {
-    browser.remove();
-    if (terminalElem) terminalElem.style.display = "flex";
-  });
-
-  browser.querySelector("#reload-browser")?.addEventListener("click", () => {
-    loadBrowserContent(folder + "/" + page, browser);
-  });
-
-  urlInput?.addEventListener("keydown", async (e) => {
-    if (e.key === "Enter") {
-      const url = urlInput.value.trim();
-      if (url.includes("localhost:8080") || url.includes("127.0.0.1:8080")) {
-        const pathMatch = url.split("8080/")[1];
-        if (pathMatch) {
-          await loadBrowserContent(pathMatch, browser);
-        } else {
-          await loadBrowserContent("index", browser);
-        }
-      } else {
-        contentDiv.innerHTML = \`
-          <div class="error-page">
-            <div class="error-icon">🌐⚠️</div>
-            <h1>Server Not Found</h1>
-            <p>KalBrowser can’t find the server at <strong>\${url}</strong>.</p>
-            <ul>
-              <li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com</li>
-              <li>If you are unable to load any pages, check your network connection.</li>
-              <li>Make sure KalBrowser is permitted to access the Web.</li>
-            </ul>
-            <button id="retry-btn-error" class="retry-btn">Try Again</button>
-          </div>
-        \`;
-        document.getElementById("retry-btn-error")?.addEventListener("click", () => {
-           loadBrowserContent(folder + "/" + page, browser);
-        });
-      }
-    }
-  });
-
-  browser.querySelector("#inspect-browser")?.addEventListener("click", () => {
-    if (window.eruda) {
-       window.eruda._isInit ? window.eruda.show() : (window.eruda.init(), window.eruda.show());
-    } else {
-      const s = document.createElement('script');
-      s.src = "//cdn.jsdelivr.net/npm/eruda";
-      s.onload = () => { eruda.init(); eruda.show(); };
-      document.head.appendChild(s);
-    }
-  });
-
-  await loadBrowserContent(folder + "/" + page, browser);
-  return null;
+    // 2. Initialize Browser UI
+    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+    initBrowserUI(cleanPath);
 }
 
-async function loadBrowserContent(path, browser) {
-  const contentDiv = browser.querySelector(".browser-content");
-  const urlInput = browser.querySelector("#url-input");
-  const parts = path.split("/").filter(p => p);
-  const f = parts[0] || "index";
-  const p = parts[1] || "index";
-  
-  if (urlInput) urlInput.value = "http://localhost:8080/" + f + "/" + p;
+// --- INSTALLATION ANIMATION ---
+async function runInstallationSimulation(output) {
+    const container = document.createElement("div");
+    container.className = "command-output";
+    output.appendChild(container);
 
-  try {
-    const res = await fetch("/static/browsersites/" + f + "/" + p + ".html");
-    if (!res.ok) throw new Error("Page not found");
-    const html = await res.text();
-    contentDiv.innerHTML = '<div class="site-container">' + html + '</div>';
+    const packages = ["kalbrowser-core", "lib-render-engine", "common-styles", "dev-tools-eruda"];
 
-    const css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = "/static/browsersites/" + f + "/style.css";
-    document.head.appendChild(css);
+    addLog(container, "Resolving dependencies...");
+    await sleep(400);
 
-    const js = document.createElement("script");
-    js.src = "/static/browsersites/" + f + "/script.js";
-    document.body.appendChild(js);
-  } catch (err) {
-    contentDiv.innerHTML = '<div style="padding: 20px; color: red;">Error: ' + err.message + '</div>';
-  }
+    for (let pkg of packages) {
+        const line = addLog(container, `Unpacking ${pkg}...`);
+        for (let i = 0; i <= 5; i++) {
+            line.textContent = `Unpacking ${pkg}... [${"#".repeat(i)}${".".repeat(5-i)}]`;
+            await sleep(80);
+        }
+        line.textContent = `Setting up ${pkg}... [OK]`;
+    }
+
+    addLog(container, "Starting browser sub-system...");
+    await sleep(600);
+}
+
+// --- MAIN BROWSER LOGIC ---
+function initBrowserUI(initialPath) {
+    // Hide Terminal
+    const terminalElem = document.getElementById("terminal");
+    if (terminalElem) terminalElem.style.display = "none";
+
+    // Create Browser Container
+    const browser = document.createElement("div");
+    browser.className = "fake-browser fullscreen";
+
+    // Internal State
+    const state = {
+        history: [],
+        currentIndex: -1,
+        isLoading: false
+    };
+
+    // Inject Styles for the new Menu
+    const menuStyles = `
+        <style>
+            .browser-menu-container { position: relative; display: flex; align-items: center; gap: 5px; }
+            .browser-dropdown {
+                position: absolute; top: 100%; right: 0; width: 200px;
+                background: white; border: 1px solid #ccc; border-radius: 4px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
+                display: none; flex-direction: column; padding: 5px 0; margin-top: 5px;
+            }
+            .browser-dropdown.show { display: flex; }
+            .menu-item {
+                padding: 8px 16px; font-size: 13px; color: #333; cursor: pointer;
+                display: flex; justify-content: space-between;
+            }
+            .menu-item:hover { background: #f1f3f4; }
+            .menu-item.disabled { color: #aaa; cursor: default; }
+            .menu-separator { height: 1px; background: #e0e0e0; margin: 4px 0; }
+            .menu-icon { font-size: 16px; line-height: 1; }
+        </style>
+    `;
+
+    browser.innerHTML = `
+        ${menuStyles}
+        <div class="browser-header">
+            <div class="browser-tabs">
+                <div class="tab active">
+                    <span class="tab-icon">✨</span>
+                    <span class="tab-label">Loading...</span>
+                    <span class="tab-close">×</span>
+                </div>
+            </div>
+            <div class="browser-toolbar">
+                <button id="back-btn" class="toolbar-btn" disabled>←</button>
+                <button id="fwd-btn" class="toolbar-btn" disabled>→</button>
+                <button id="refresh-btn" class="toolbar-btn">⟳</button>
+
+                <div class="url-bar-container">
+                    <input type="text" id="url-input" class="url-input" placeholder="Search or enter address">
+                </div>
+
+                <div class="browser-menu-container">
+                     <button id="menu-btn" class="toolbar-btn">⋮</button>
+
+                     <div id="browser-dropdown" class="browser-dropdown">
+                        <div class="menu-item disabled">New Tab <span style="color:#999">Ctrl+T</span></div>
+                        <div class="menu-item disabled">History <span style="color:#999">Ctrl+H</span></div>
+                        <div class="menu-item disabled">Downloads <span style="color:#999">Ctrl+J</span></div>
+                        <div class="menu-separator"></div>
+                        <div class="menu-item" id="dev-tools-item">More tools &nbsp; ▶</div>
+                        <div class="menu-item" id="activate-eruda">Developer Tools <span style="color:#999">F12</span></div>
+                        <div class="menu-separator"></div>
+                        <div class="menu-item" id="menu-exit">Exit</div>
+                     </div>
+
+                     <button id="close-browser-btn" class="toolbar-btn close" style="color:red; margin-left: 5px;">×</button>
+                </div>
+            </div>
+            <div class="loading-bar" id="loader"></div>
+        </div>
+        <iframe id="content-frame" class="browser-frame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+    `;
+
+    document.body.appendChild(browser);
+
+    // References
+    const iframe = browser.querySelector("#content-frame");
+    const urlInput = browser.querySelector("#url-input");
+    const loader = browser.querySelector("#loader");
+    const tabLabel = browser.querySelector(".tab-label");
+    const menuBtn = browser.querySelector("#menu-btn");
+    const dropdown = browser.querySelector("#browser-dropdown");
+
+    // --- EVENT LISTENERS ---
+
+    // 1. Menu Toggle
+    menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle("show");
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!browser.contains(e.target)) return;
+        if (!dropdown.contains(e.target) && e.target !== menuBtn) {
+            dropdown.classList.remove("show");
+        }
+    });
+
+    // 2. Developer Tools (Eruda) Trigger
+    browser.querySelector("#activate-eruda").addEventListener("click", () => {
+        dropdown.classList.remove("show");
+        const win = iframe.contentWindow;
+
+        if (win && win.eruda) {
+            // 
+            if (!win.eruda._isInit) {
+                win.eruda.init({
+                    tool: ['console', 'elements', 'network', 'resources', 'info'],
+                    autoScale: true,
+                    defaults: { displaySize: 50, theme: 'Dracula' }
+                });
+            }
+            win.eruda.show();
+        } else {
+            alert("Developer Tools not loaded yet. Please wait for the page to finish loading.");
+        }
+    });
+
+    // 3. Close Browser (Menu Item & Button)
+    const closeBrowser = () => {
+        browser.remove();
+        if (terminalElem) terminalElem.style.display = "flex";
+    };
+    browser.querySelector("#close-browser-btn").addEventListener("click", closeBrowser);
+    browser.querySelector("#menu-exit").addEventListener("click", closeBrowser);
+
+    // 4. Refresh
+    browser.querySelector("#refresh-btn").addEventListener("click", () => {
+        const currentUrl = state.history[state.currentIndex];
+        if (currentUrl) handleNavigation(currentUrl, false);
+    });
+
+    // 5. URL Input
+    urlInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            const val = urlInput.value.trim();
+            handleNavigation(val, true);
+            urlInput.blur();
+        }
+    });
+
+    // --- NAVIGATION CONTROLLER ---
+    const handleNavigation = (inputUrl, addToHistory) => {
+        const isLocal = inputUrl.includes("localhost:8080") || inputUrl.includes("127.0.0.1:8080");
+
+        if (isLocal) {
+            const splitKey = "8080/";
+            const pathPart = inputUrl.includes(splitKey) ? inputUrl.split(splitKey)[1] : "";
+            const safePath = pathPart || "index/index";
+            loadInternalPage(safePath, addToHistory);
+        } else if (!inputUrl.includes(".") && !inputUrl.includes("://")) {
+            loadInternalPage(inputUrl, addToHistory);
+        } else {
+            loadExternalError(inputUrl, addToHistory);
+        }
+    };
+
+    const loadInternalPage = async (pathKey, addToHistory = true) => {
+        if (state.isLoading) return;
+        state.isLoading = true;
+
+        loader.style.width = "30%";
+        loader.style.opacity = "1";
+        tabLabel.textContent = "Connecting...";
+
+        const parts = pathKey.split("/").filter(p => p);
+        const folder = parts[0] || "index";
+        const page = parts[1] || "index";
+        const displayUrl = `localhost:8080/${folder}/${page}`;
+        urlInput.value = displayUrl;
+
+        await sleep(400);
+        loader.style.width = "70%";
+
+        try {
+            const htmlPath = `/static/browsersites/${folder}/${page}.html`;
+            const cssPath = `/static/browsersites/${folder}/style.css`;
+            const jsPath = `/static/browsersites/${folder}/script.js`;
+
+            const res = await fetch(htmlPath);
+            if (!res.ok) throw new Error(`404: Page not found (${htmlPath})`);
+            const htmlContent = await res.text();
+
+            // NOTE: Eruda is loaded but NOT initialized here.
+            const docContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>body { font-family: sans-serif; padding: 20px; }</style>
+                    <link rel="stylesheet" href="${cssPath}">
+                    <script src="//cdn.jsdelivr.net/npm/eruda"><\/script>
+                </head>
+                <body>
+                    <div id="app">${htmlContent}</div>
+                    <script src="${jsPath}"><\/script>
+                </body>
+                </html>
+            `;
+
+            iframe.srcdoc = docContent;
+            tabLabel.textContent = page.charAt(0).toUpperCase() + page.slice(1);
+
+            if (addToHistory) {
+                state.history.push(displayUrl);
+                state.currentIndex++;
+            }
+
+        } catch (error) {
+            renderInternalError(iframe, error.message);
+            tabLabel.textContent = "Error";
+        } finally {
+            finishLoading();
+        }
+    };
+
+    const loadExternalError = async (url, addToHistory = true) => {
+        if (state.isLoading) return;
+        state.isLoading = true;
+        loader.style.width = "40%";
+        tabLabel.textContent = "Resolving...";
+        await sleep(800);
+        loader.style.width = "100%";
+        urlInput.value = url.startsWith("http") ? url : `http://${url}`;
+
+        iframe.srcdoc = `
+            <html>
+            <body style="font-family: 'Segoe UI', sans-serif; color: #202124; padding: 10% 20px; max-width: 600px; margin: 0 auto;">
+                <div style="font-size: 72px; margin-bottom: 20px;">🦖</div>
+                <h1>This site can't be reached</h1>
+                <p><strong>${url}</strong>’s server IP address could not be found.</p>
+                <div style="margin-top: 30px; font-size: 12px; color: #5f6368;">DNS_PROBE_FINISHED_NXDOMAIN</div>
+                <button onclick="window.location.reload()" style="margin-top: 30px; background: #0b57d0; color: white; border: none; padding: 10px 24px; border-radius: 18px; cursor: pointer;">Reload</button>
+                <script src="//cdn.jsdelivr.net/npm/eruda"><\/script>
+            </body>
+            </html>
+        `;
+
+        tabLabel.textContent = "Server Not Found";
+        if (addToHistory) {
+            state.history.push(url);
+            state.currentIndex++;
+        }
+        finishLoading();
+    };
+
+    const finishLoading = () => {
+        loader.style.width = "100%";
+        setTimeout(() => { loader.style.opacity = "0"; loader.style.width = "0%"; }, 200);
+        state.isLoading = false;
+    };
+
+    handleNavigation(initialPath, true);
+}
+
+// Helpers
+function renderInternalError(iframe, msg) {
+    iframe.srcdoc = `
+        <div style="font-family:monospace; color:#333; text-align:center; margin-top:50px;">
+            <h1>404 Not Found (Internal)</h1>
+            <p>Could not load local resource.</p>
+            <p style="color:red; font-size:0.8em">${msg}</p>
+        </div>
+    `;
+}
+
+function addLog(container, text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -1,417 +1,505 @@
-const output = document.getElementById("output");
-let currentLine = null;
-let cursor = null;
-const prompt = "user@ubuntu:~$";
+// --- CONFIGURATION ---
+const CONFIG = {
+    user: "guest",
+    host: "kal-os",
+    path: "~",
+    typingSpeed: 0, 
+};
 
-let availableCommands = [];
-let history = [];
+// --- STATE ---
+let availableCommands = ["help", "clear", "history", "exit", "mywork"]; 
+let commandHistory = [];
 let historyIndex = -1;
 let currentInput = "";
+let cursorPosition = 0;
+let isBusy = false; 
 
-async function loadCommands() {
-  try {
-    const res = await fetch('/commands_list');
-    availableCommands = await res.json();
-  } catch (e) {
-    console.error("Failed to load commands list:", e);
-  }
+// --- DOM REFERENCES ---
+const output = document.getElementById("output");
+const terminalContainer = document.getElementById("terminal");
+const bootContainer = document.getElementById("boot-sequence");
+const bootOutput = document.getElementById("boot-output");
+
+// Mobile Input Helper
+const mobileInput = document.createElement("input");
+setupMobileInput();
+
+let currentLine = null;
+let cursor = null;
+
+// --- ENTRY POINT ---
+bootSystem();
+
+// ============================================================================
+//  1. REALISTIC BOOT SEQUENCE ENGINE
+// ============================================================================
+
+async function bootSystem() {
+    loadCommandList(); 
+
+    // Helper to scroll the MAIN CONTAINER
+    const scrollToBottom = () => {
+        bootContainer.scrollTop = bootContainer.scrollHeight;
+    };
+
+    // Phase 1: Kernel Initialization 
+    let currentTime = 0.0;
+
+    // ... [Kernel Messages Array - Same as before] ...
+    const kernelMessages = [
+        "Linux version 5.15.0-76-generic (buildd@lcy02-amd64-046)",
+        "Command line: BOOT_IMAGE=/boot/vmlinuz-5.15.0-76-generic ro quiet splash",
+        "KERNEL supported cpus: Intel GenuineIntel, AMD AuthenticAMD",
+        "x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'",
+        "BIOS-e820: [mem 0x0000000000000000-0x000000000009fbff] usable",
+        "ACPI: Early table checksum verification disabled",
+        "Zone ranges: DMA [mem 0x00001000-0x00ffffff], Normal [mem 0x01000000-0x023fffff]",
+        "Memory: 16362540K/16777216K available (14339K kernel code)",
+        "TCP: Hash tables configured (established 131072 bind 131072)",
+        "rcu: Hierarchical RCU implementation.",
+        "Console: colour VGA+ 80x25",
+        "Calibrating delay loop... 4224.00 BogoMIPS (lpj=2112000)",
+        "smpboot: CPU0: Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "devtmpfs: initialized",
+        "NET: Registered protocol family 16",
+        "SCSI subsystem initialized",
+        "usbcore: registered new interface driver usbfs",
+        "Dynamic Kernel Service Technology: v2.1.4 active"
+    ];
+
+    const printKernelLine = (msg) => {
+        currentTime += Math.random() * 0.05;
+        const timeStr = `[${currentTime.toFixed(6).padStart(12, " ")}]`;
+        const line = document.createElement("div");
+        line.className = "boot-line";
+        line.innerHTML = `<span class="boot-time">${timeStr}</span><span class="boot-message">${msg}</span>`;
+        bootOutput.appendChild(line);
+        scrollToBottom();
+    };
+
+    let i = 0;
+    while(i < kernelMessages.length) {
+        const burst = Math.floor(Math.random() * 12) + 3;
+        for(let j=0; j<burst && i<kernelMessages.length; j++) {
+            printKernelLine(kernelMessages[i]);
+            i++;
+            await sleep(5); 
+        }
+        await sleep(Math.random() * 150 + 20);
+    }
+
+    // Phase 2: Systemd Services
+    await sleep(600);
+    const serviceMessages = [
+        { name: "systemd-modules-load.service", desc: "Load Kernel Modules" },
+        { name: "blk-availability.service", desc: "Availability of block devices" },
+        { name: "ufw.service", desc: "Uncomplicated firewall" },
+        { name: "keyboard-setup.service", desc: "Set the console keyboard layout", delay: 400 },
+        { name: "apparmor.service", desc: "Load AppArmor profiles" },
+        { name: "networking.service", desc: "Raise network interfaces", delay: 800 },
+        { name: "ssh.service", desc: "OpenBSD Secure Shell server" },
+        { name: "kal-browser-core.service", desc: "KalBrowser Render Engine", delay: 300 },
+        { name: "snapd.service", desc: "Snap Daemon" },
+        { name: "dbus.service", desc: "D-Bus System Message Bus" },
+        { name: "user@1000.service", desc: "User Manager for UID 1000", delay: 200 }
+    ];
+
+    for (let svc of serviceMessages) {
+        const line = document.createElement("div");
+        line.innerHTML = `<span class="status-block" style="color:#bd93f9; font-weight:bold;">[ ** ]</span> Starting ${svc.desc}...`;
+        bootOutput.appendChild(line);
+        scrollToBottom();
+
+        await sleep(svc.delay || Math.random() * 100 + 50);
+
+        line.innerHTML = `<span class="status-block st-ok">[ OK ]</span> Started ${svc.desc}.`;
+    }
+
+    // Finalization
+    await sleep(400);
+    const finalMsg = document.createElement("div");
+    finalMsg.innerHTML = `<br>Welcome to KalOS 22.04 LTS!<br><br>Press any key to activate console...`;
+    bootOutput.appendChild(finalMsg);
+    scrollToBottom();
+
+    const onStart = () => {
+        document.removeEventListener("keydown", onStart);
+        document.removeEventListener("click", onStart);
+        document.removeEventListener("touchstart", onStart);
+
+        bootContainer.style.display = "none";
+        terminalContainer.style.display = "flex";
+
+        output.innerHTML = "";
+        printLine("Welcome to KalOS Terminal v1.01");
+        printLine("Type <span style='color:#50fa7b'>help</span> to see available commands.");
+        printLine(""); 
+        createNewLine();
+        focusInput();
+    };
+
+    document.addEventListener("keydown", onStart);
+    document.addEventListener("click", onStart);
+    document.addEventListener("touchstart", onStart);
 }
 
-async function runCommand(cmd) {
-  cmd = cmd.toLowerCase();
+// ============================================================================
+//  2. COMMAND EXECUTION KERNEL
+// ============================================================================
 
-  if (cmd === "clear") {
-    output.innerText = "";
-    return null;
-  }
+async function loadCommandList() {
+    try {
+        // OLD: const res = await fetch('/static/js/commands/index.json');
 
-  if (cmd === "help") {
-    return `Available commands:\n- ${availableCommands.join("\n- ")}`;
-  }
+        // NEW: Fetch from your Flask route
+        const res = await fetch('/commands_list'); 
 
-  if (cmd === "reload") {
-    await loadCommands();
-    return "Commands list reloaded.";
-  }
-
-  if (!availableCommands.includes(cmd)) {
-    return `bash: ${cmd}: command not found\nType 'help' for available commands.`;
-  }
-
-  try {
-    const module = await import(`./commands/${cmd}.js?cacheBust=${Date.now()}`);
-    return module.default();
-  } catch (err) {
-    return `Error loading command ${cmd}: ${err.message}`;
-  }
+        if (res.ok) {
+            const external = await res.json();
+            // Merge unique commands
+            availableCommands = [...new Set([...availableCommands, ...external])];
+        }
+    } catch (e) {
+        console.warn("Could not load external command list.");
+    }
 }
 
-document.addEventListener("keydown", async (e) => {
-  if (e.target === mobileInput) return; // ignore mobile input events here
-  const termElem = document.getElementById("terminal");
-  if (!termElem || termElem.style.display === "none") return;
+function scrollToBottom() {
+    // We scroll the CONTAINER, not the body or the output div
+    terminalContainer.scrollTop = terminalContainer.scrollHeight;
+}
 
-  // Ctrl + L (Clear)
-  if (e.ctrlKey && e.key === "l") {
-    e.preventDefault();
-    output.innerText = "";
-    const newPrompt = document.createElement("div");
-    newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
-    output.appendChild(newPrompt);
+async function runCommand(rawCmd) {
+    if (!rawCmd.trim()) return;
+
+    isBusy = true; 
+    const rawArgs = rawCmd.trim().split(/\s+/);
+    const cmd = rawArgs[0].toLowerCase();
+
+    if (cmd === "clear") {
+        output.innerHTML = "";
+        isBusy = false;
+        return;
+    }
+
+    if (cmd === "history") {
+        const text = commandHistory.map((c, i) => ` ${i + 1}  ${c}`).join("\n");
+        printLine(text);
+        isBusy = false;
+        return;
+    }
+
+    if (cmd === "exit") {
+        location.reload();
+        return;
+    }
+
+    if (cmd === "help") {
+        printLine(`
+GNU bash, version 5.1.16(1)-release (x86_64-pc-linux-gnu)
+These shell commands are defined internally. Type 'help' to see this list.
+
+<span style="color:#8be9fd">Available commands:</span>
+${availableCommands.join("  ")}
+        `);
+        isBusy = false;
+        return;
+    }
+
+    try {
+        const module = await import(`./commands/${cmd}.js?v=${Date.now()}`);
+
+        const systemApi = {
+            print: (text, color) => printLine(text, color),
+            error: (text) => printLine(text, "#ff5555"),
+            clear: () => output.innerHTML = "",
+            sleep: sleep,
+            openBrowser: (await import('./browser.js')).default, 
+            colors: {
+                green: "#50fa7b",
+                cyan: "#8be9fd",
+                orange: "#ffb86c", 
+                purple: "#bd93f9",
+                red: "#ff5555",
+                gray: "#6272a4"
+            }
+        };
+
+        const { flags, args } = parseArgs(rawArgs.slice(1));
+
+        if (module.default && typeof module.default === "function") {
+            await module.default({ flags, args, system: systemApi });
+        } else {
+            printLine(`Error: ${cmd} is not a valid executable.`, "#ff5555");
+        }
+
+    } catch (err) {
+        if (err.message.includes("Failed to fetch") || err.message.includes("Cannot find module")) {
+            printLine(`bash: ${cmd}: command not found`, "#ff5555");
+        } else {
+            console.error(err);
+            printLine(`Runtime Error: ${err.message}`, "#ff5555");
+        }
+    }
+
+    isBusy = false;
+}
+
+// ============================================================================
+//  3. INPUT ENGINE & RENDERER
+// ============================================================================
+
+function createNewLine() {
+    const div = document.createElement("div");
+    div.className = "line-wrapper";
+    const promptHtml = `<span class="prompt-user">${CONFIG.user}@${CONFIG.host}</span>:<span class="prompt-path">${CONFIG.path}</span>$ `;
+    div.innerHTML = `${promptHtml}<span class="input-line"></span>`;
+    output.appendChild(div);
+    updateCurrentLineRef();
     currentInput = "";
-    updateCurrentLineRef();
-    return;
-  }
-
-  // Tab completion simulation
-  if (e.key === "Tab") {
-    e.preventDefault();
-    const matches = availableCommands.filter(c => c.startsWith(currentInput));
-    if (matches.length === 1) {
-      currentInput = matches[0];
-      if (currentLine) currentLine.textContent = currentInput;
-    }
-    return;
-  }
-
-  if (e.key === "Enter") {
-    const cmd = currentInput.trim();
-
-    // Remove current input line and cursor (to avoid duplicates)
-    if (currentLine) currentLine.remove();
-    if (cursor) cursor.remove();
-
-    // Show the entered command as a static line
-    const executedLine = document.createElement("div");
-    executedLine.innerHTML = `<span class="prompt">${prompt}</span> ${cmd}`;
-    const existingPrompt = document.getElementById("prompt");
-    if (existingPrompt) existingPrompt.remove();
-    output.appendChild(executedLine);
-
-    // Handle empty input
-    if (!cmd) {
-      // Add new prompt line and cursor for next input
-      const newPrompt = document.createElement("div");
-      newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
-      output.appendChild(newPrompt);
-      currentInput = "";
-      output.scrollTop = output.scrollHeight;
-      return;
-    }
-
-    history.push(cmd);
-    historyIndex = history.length;
-
-    // Run command and show output before prompt
-    const response = await runCommand(cmd);
-    if (response !== null) {
-      const responseLine = document.createElement("div");
-      responseLine.textContent = response;
-      output.appendChild(responseLine);
-    }
-
-    // Add new prompt line and cursor for next input
-    const newPrompt = document.createElement("div");
-    newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
-    output.appendChild(newPrompt);
-
-    currentInput = "";
-    updateCurrentLineRef();
-
-    output.scrollTop = output.scrollHeight;
-  }
-
-
-  // Arrow Up (previous command)
-  if (e.key === "ArrowUp") {
-    if (historyIndex > 0) {
-      historyIndex--;
-      currentInput = history[historyIndex];
-    }
-    updateCurrentLineRef();
-    if (currentLine) currentLine.textContent = currentInput;
-    e.preventDefault();
-    return;
-  }
-
-  // Arrow Down (next command)
-  if (e.key === "ArrowDown") {
-    if (historyIndex < history.length - 1) {
-      historyIndex++;
-      currentInput = history[historyIndex];
-    } else {
-      historyIndex = history.length;
-      currentInput = "";
-    }
-    updateCurrentLineRef();
-    if (currentLine) currentLine.textContent = currentInput;
-    e.preventDefault();
-    return;
-  }
-
-  // Backspace
-  if (e.key === "Backspace") {
-    if (currentInput.length > 0) {
-      currentInput = currentInput.slice(0, -1);
-      updateCurrentLineRef();
-      if (currentLine) currentLine.textContent = currentInput;
-    }
-    e.preventDefault();
-    return;
-  }
-
-  // Printable characters
-  if (e.key.length === 1) {
-    currentInput += e.key;
-    updateCurrentLineRef();
-    if (currentLine) currentLine.textContent = currentInput;
-    e.preventDefault();
-    return;
-  }
-});
-
+    cursorPosition = 0;
+    renderInputLine();
+    window.scrollTo(0, document.body.scrollHeight);
+}
 
 function updateCurrentLineRef() {
-  currentLine = document.getElementById("current-line");
-  cursor = document.getElementById("cursor");
-
-  // Debug logging to help identify issues
-  if (!currentLine) {
-    console.error("current-line element not found");
-  }
-  if (!cursor) {
-    console.error("cursor element not found");
-  }
-}
-
-function getRandomWarnings(stage) {
-  const allWarnings = {
-    post: [
-      "[WARNING] RTC battery low, please replace soon.",
-      "[WARNING] Fan speed sensor failed.",
-      "[WARNING] Thermal sensor calibration required.",
-      "[WARNING] Optional module 'xyz' failed to initialize."
-    ],
-    kernel: [
-      "[WARNING] ACPI firmware update recommended.",
-      "[WARNING] USB device driver not responding.",
-      "[WARNING] NVMe module latency high.",
-      "[WARNING] Network driver initialization delayed."
-    ],
-    services: [
-      "[WARNING] Terminal emulator loaded with minor errors.",
-      "[WARNING] Command processor modules missing optional dependency.",
-      "[WARNING] Portfolio modules failed checksum.",
-      "[WARNING] Contact system cannot verify SSL certificate."
-    ]
-  };
-
-  const list = allWarnings[stage] || [];
-  // ~30% chance to show a warning
-  return Math.random() < 0.15 ? list[Math.floor(Math.random() * list.length)] : null;
-}
-
-// Define base boot lines
-const baseBootLines = [
-  { text: "KalOS Boot Loader v2.1.4", delay: 150, class: "boot-info" },
-  { text: "Press [ESC] to enter setup", delay: 800, class: "boot-info" },
-  { text: "", delay: 300 },
-  { text: "Performing POST (Power-On Self-Test)...", delay: 500, class: "boot-loading" },
-  { text: "[ OK ] CPU: Intel Core i7-12700K", delay: 300, class: "boot-ok", stage: "post" },
-  { text: "[ OK ] Memory: 32GB DDR4 @ 3200MHz", delay: 300, class: "boot-ok", stage: "post" },
-  { text: "[ OK ] Storage: 1TB NVMe SSD", delay: 300, class: "boot-ok", stage: "post" },
-  { text: "[ OK ] Network Controller: Ethernet Connected", delay: 300, class: "boot-ok", stage: "post" },
-  { text: "[ OK ] GPU: NVIDIA GeForce RTX 3080", delay: 200, class: "boot-ok", stage: "post" },
-  { text: "[ OK ] USB Controller: xHCI Host Controller", delay: 150, class: "boot-ok", stage: "post" },
-  { text: "", delay: 400 },
-  { text: "Loading kernel modules:", delay: 500, class: "boot-loading", stage: "kernel" },
-  { text: " - usb-storage [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
-  { text: " - nvme [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
-  { text: " - e1000e (Ethernet driver) [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
-  { text: " - snd_hda_intel (Audio driver) [ OK ]", delay: 200, class: "boot-ok", stage: "kernel" },
-  { text: " - drm_kms_helper [ OK ]", delay: 150, class: "boot-ok", stage: "kernel" },
-  { text: " - intel_agp [ OK ]", delay: 100, class: "boot-ok", stage: "kernel" },
-  { text: "", delay: 300 },
-  { text: "Starting system services...", delay: 600, class: "boot-loading", stage: "services" },
-  { text: " - Terminal emulator [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
-  { text: " - Command processor [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
-  { text: " - Portfolio modules [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
-  { text: " - Contact system [ OK ]", delay: 200, class: "boot-ok", stage: "services" },
-  { text: " - Xorg server [ OK ]", delay: 250, class: "boot-ok", stage: "services" },
-  { text: " - LightDM Display Manager [ OK ]", delay: 300, class: "boot-ok", stage: "services" },
-  { text: "", delay: 400 },
-  { text: "System ready.", delay: 500, class: "boot-ok" },
-  { text: "", delay: 300 }
-];
-
-// Build boot sequence with random warnings
-const bootSequence = [];
-baseBootLines.forEach(line => {
-  bootSequence.push(line);
-  const warning = getRandomWarnings(line.stage);
-  if (warning) bootSequence.push({ text: warning, delay: 400 + Math.random()*200, class: "boot-warning" });
-});
-
-
-// For a nicer effect, we can add a little function to add some dynamic loading dots:
-function animateLoadingDots(element, maxDots = 3, interval = 400, duration = 3000) {
-  let dots = 0;
-  const start = Date.now();
-
-  const intervalId = setInterval(() => {
-    dots = (dots + 1) % (maxDots + 1);
-    element.textContent = element.textContent.replace(/\.*$/, '.'.repeat(dots));
-
-    if (Date.now() - start > duration) {
-      clearInterval(intervalId);
+    const inputLines = document.getElementsByClassName("input-line");
+    if (inputLines.length > 0) {
+        currentLine = inputLines[inputLines.length - 1];
     }
-  }, interval);
 }
 
-let bootIndex = 0;
-const bootOutput = document.getElementById("boot-output");
-const bootContainer = document.getElementById("boot-sequence");
-const terminal = document.getElementById("terminal");
+function renderInputLine() {
+    if (!currentLine) return;
+    const left = currentInput.substring(0, cursorPosition);
+    const charAtCursor = currentInput.substring(cursorPosition, cursorPosition + 1) || " ";
+    const right = currentInput.substring(cursorPosition + 1);
+    currentLine.innerHTML = escapeHtml(left) + 
+        `<span id="cursor">${escapeHtml(charAtCursor)}</span>` + 
+        escapeHtml(right);
+    cursor = document.getElementById("cursor");
+}
 
-// Only create one hidden input for mobile
-const mobileInput = document.createElement("input");
-mobileInput.type = "text";
-mobileInput.style.position = "absolute";
-mobileInput.style.opacity = 0;
-mobileInput.style.height = 0;
-mobileInput.style.width = 0;
-mobileInput.autocapitalize = "off";
-mobileInput.autocomplete = "off";
-mobileInput.autocorrect = "off";
-mobileInput.spellcheck = false;
-document.body.appendChild(mobileInput);
-
-// Focus hidden input on tap
-terminal.addEventListener("click", () => mobileInput.focus());
-terminal.addEventListener("touchstart", () => mobileInput.focus());
-
-mobileInput.addEventListener("input", (e) => {
-    const lastChar = e.data; // the most recent typed character
-    if (lastChar) {
-        currentInput += lastChar;  // append at end
-    } else {
-        // handle deletion/backspace
-        currentInput = mobileInput.value;
+async function handleCommandEntry() {
+    if (cursor) {
+        const char = cursor.textContent;
+        cursor.replaceWith(char); 
     }
-    if (currentLine) currentLine.innerText = currentInput;
-});
-
-
-// Handle Enter only; let Backspace and typing be handled naturally by input
-mobileInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
     const cmd = currentInput.trim();
-
-    // Remove current input line
-    if (currentLine) currentLine.remove();
-    if (cursor) cursor.remove();
-
-    const executedLine = document.createElement("div");
-    executedLine.innerHTML = `<span class="prompt">${prompt}</span> ${cmd}`;
-    const existingPrompt = document.getElementById("prompt");
-    if (existingPrompt) existingPrompt.remove();
-    output.appendChild(executedLine);
-
     if (cmd) {
-      history.push(cmd);
-      historyIndex = history.length;
+        commandHistory.push(cmd);
+        historyIndex = commandHistory.length;
+        await runCommand(cmd);
     }
-
-    runCommand(cmd).then(response => {
-      if (response) {
-        const responseLine = document.createElement("div");
-        responseLine.textContent = response;
-        output.appendChild(responseLine);
-      }
-
-      // Add new prompt
-      const newPrompt = document.createElement("div");
-      newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
-      output.appendChild(newPrompt);
-
-      currentInput = "";
-      mobileInput.value = "";
-      updateCurrentLineRef();
-      output.scrollTop = output.scrollHeight;
-    });
-  }
-});
-
-function displayBootLine() {
-  if (bootIndex < bootSequence.length) {
-    const line = bootSequence[bootIndex];
-    const span = document.createElement('span');
-    if (line.class) {
-      span.className = line.class;
+    if (!isBusy) {
+        createNewLine();
     }
-    span.textContent = line.text;
-    bootOutput.appendChild(span);
-    bootOutput.appendChild(document.createTextNode('\n'));
-    bootOutput.scrollTop = bootOutput.scrollHeight;
-
-    // If line has "boot-loading" class, animate dots
-    if (line.class === "boot-loading") {
-      animateLoadingDots(span);
-    }
-
-    bootIndex++;
-
-    // Randomize delay +/- 100ms for realism
-    const randomizedDelay = line.delay + (Math.random() * 200 - 100);
-    setTimeout(displayBootLine, Math.max(50, randomizedDelay));
-  } else {
-    // Boot sequence complete, show appropriate message and wait for interaction
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      ('ontouchstart' in window) ||
-      (navigator.maxTouchPoints > 0);
-
-    const continueText = isMobile ? "Tap the screen to continue..." : "Press any key to continue...";
-    const span = document.createElement('span');
-    span.className = 'boot-text';
-    span.textContent = continueText;
-    bootOutput.appendChild(span);
-    bootOutput.appendChild(document.createTextNode('\n'));
-    bootOutput.scrollTop = bootOutput.scrollHeight;
-
-    function bootComplete() {
-      bootContainer.style.transition = "opacity 0.5s ease";
-      bootContainer.style.opacity = "0";
-      setTimeout(() => {
-        bootContainer.style.display = 'none';
-        terminal.style.display = 'flex';
-        // Wait a moment for the DOM to update before getting references
-        setTimeout(() => {
-          updateCurrentLineRef();
-        }, 10);
-      }, 500);
-
-      document.removeEventListener('keydown', bootComplete);
-      document.removeEventListener('touchstart', bootComplete);
-      document.removeEventListener('click', bootComplete);
-    }
-
-    document.addEventListener('keydown', bootComplete, { once: true });
-    document.addEventListener('touchstart', bootComplete, { once: true });
-    document.addEventListener('click', bootComplete, { once: true });
-  }
 }
 
-// Start boot sequence
-displayBootLine();
+// ============================================================================
+//  4. EVENT LISTENERS (FIXED)
+// ============================================================================
 
+document.addEventListener("keydown", (e) => {
+    // 1. Basic Guards
+    if (isBusy || terminalContainer.style.display === "none") return;
 
-// Load commands list on startup
-loadCommands();
+    // 2. Identify if we are using the hidden mobile input
+    const isMobileInput = e.target === mobileInput;
 
-// Initialize references when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(() => {
-    updateCurrentLineRef();
-  }, 100);
+    // --- Control Keys (Always Handle These) ---
+
+    // Enter
+    if (e.key === "Enter") {
+        e.preventDefault();
+        handleCommandEntry();
+        return;
+    }
+
+    // Backspace (Now works even if focused on mobileInput)
+    if (e.key === "Backspace") {
+        e.preventDefault();
+        if (cursorPosition > 0) {
+            currentInput = currentInput.slice(0, cursorPosition - 1) + currentInput.slice(cursorPosition);
+            cursorPosition--;
+            renderInputLine();
+        }
+        return;
+    }
+
+    // Ctrl+C / Ctrl+L
+    if (e.ctrlKey) {
+        if (e.key === "c") {
+            e.preventDefault();
+            const breakLine = document.createElement("div");
+            breakLine.innerText = "^C";
+            output.lastElementChild.appendChild(breakLine);
+            currentInput = "";
+            createNewLine();
+            return;
+        }
+        if (e.key === "l") {
+            e.preventDefault();
+            output.innerHTML = "";
+            createNewLine();
+            return;
+        }
+    }
+
+    // Arrows
+    if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (cursorPosition > 0) { cursorPosition--; renderInputLine(); }
+        return;
+    }
+    if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (cursorPosition < currentInput.length) { cursorPosition++; renderInputLine(); }
+        return;
+    }
+    if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (historyIndex > 0) {
+            historyIndex--;
+            currentInput = commandHistory[historyIndex];
+            cursorPosition = currentInput.length;
+            renderInputLine();
+        }
+        return;
+    }
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+            currentInput = commandHistory[historyIndex];
+            cursorPosition = currentInput.length;
+        } else {
+            historyIndex = commandHistory.length;
+            currentInput = "";
+            cursorPosition = 0;
+        }
+        renderInputLine();
+        return;
+    }
+
+    // Tab Completion
+    if (e.key === "Tab") {
+        e.preventDefault();
+        const args = currentInput.split(" ");
+        const currentWord = args[args.length - 1];
+        if (!currentWord) return;
+        const matches = availableCommands.filter(c => c.startsWith(currentWord));
+        if (matches.length === 1) {
+            args[args.length - 1] = matches[0];
+            currentInput = args.join(" ") + " "; 
+            cursorPosition = currentInput.length;
+            renderInputLine();
+        }
+        return;
+    }
+
+    // --- Typing Characters ---
+
+    // If we are on mobile input, let the 'input' event handle characters!
+    if (isMobileInput) return;
+
+    // Otherwise (Desktop without focus on hidden input), handle here
+    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        currentInput = currentInput.slice(0, cursorPosition) + e.key + currentInput.slice(cursorPosition);
+        cursorPosition++;
+        renderInputLine();
+    }
 });
+
+// Force focus on click
+document.addEventListener("click", focusInput);
+
+// ============================================================================
+//  5. UTILITIES & MOBILE SUPPORT
+// ============================================================================
+
+function printLine(text, color) {
+    const div = document.createElement("div");
+    if (color) div.style.color = color;
+    div.innerHTML = text; 
+    output.appendChild(div);
+
+    // FIX: Use the helper
+    scrollToBottom();
+}
+
+function parseArgs(rawArgs) {
+    const flags = {};
+    const args = [];
+    for (let i = 0; i < rawArgs.length; i++) {
+        const arg = rawArgs[i];
+        if (arg.startsWith("--")) {
+            const key = arg.slice(2);
+            const next = rawArgs[i + 1];
+            if (next && !next.startsWith("-")) {
+                flags[key] = next;
+                i++;
+            } else {
+                flags[key] = true;
+            }
+        } else if (arg.startsWith("-")) {
+            const key = arg.slice(1);
+            flags[key] = true;
+        } else {
+            args.push(arg);
+        }
+    }
+    return { flags, args };
+}
+
+function escapeHtml(text) {
+    if (!text) return "";
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/ /g, "&nbsp;");
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function setupMobileInput() {
+    mobileInput.style.cssText = "position:absolute; opacity:0; top:-1000px; font-size: 16px;";
+    // Important: Disable autocomplete to prevent weird mobile keyboard behaviors
+    mobileInput.setAttribute("autocomplete", "off");
+    mobileInput.setAttribute("autocorrect", "off");
+    mobileInput.setAttribute("autocapitalize", "off");
+    mobileInput.setAttribute("spellcheck", "false");
+
+    document.body.appendChild(mobileInput);
+
+    mobileInput.addEventListener("input", (e) => {
+        if (isBusy) { mobileInput.value = ""; return; }
+
+        if(e.inputType === "insertText" && e.data) {
+             currentInput = currentInput.slice(0, cursorPosition) + e.data + currentInput.slice(cursorPosition);
+             cursorPosition++;
+        } else if (e.inputType === "deleteContentBackward") {
+            // Fallback for mobile backspace if keydown didn't catch it
+            if(cursorPosition > 0) {
+                currentInput = currentInput.slice(0, cursorPosition - 1) + currentInput.slice(cursorPosition);
+                cursorPosition--;
+            }
+        }
+        mobileInput.value = ""; 
+        renderInputLine();
+    });
+
+    // We removed the keydown listener here because the Global listener now handles it
+}
+
+function focusInput() {
+    if (terminalContainer.style.display !== "none") {
+        mobileInput.focus();
+    }
+}

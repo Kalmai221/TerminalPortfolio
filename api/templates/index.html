@@ -2,31 +2,39 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KalOS Terminal</title>
+    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+
     <meta name="description" content="A Linux Based Portfolio for Kalmai221" />
-    <!-- Open Graph -->
+    
     <meta property="og:title" content="Kalfolio Terminal" />
     <meta property="og:description" content="A Linux Based Portfolio for Kalmai221" />
     <meta property="og:url" content="https://kalfolio.vercel.app" />
     <meta property="og:type" content="website" />
     
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Kalfolio Terminal" />
     <meta name="twitter:description" content="A Linux Based Portfolio for Kalmai221" />
+    
+    <style>
+        body, html { margin: 0; padding: 0; background: #1e1e1e; height: 100%; overflow: hidden; }
+    </style>
 </head>
 <body>
+
     <div id="boot-sequence" style="display: block;">
         <pre id="boot-output"></pre>
     </div>
     
     <div id="terminal" style="display: none;">
-        <pre id="output">Welcome to KalOS Terminal v1.01
-Type <span class="highlight">help</span> to see available commands.
-<span class="prompt" id="prompt">user@ubuntu:~$</span> <span id="current-line"></span><span id="cursor">█</span></pre>
-  </div>
+        <div id="output"></div> 
+    </div>
     
     <a href="https://github.com/Kalmai221/TerminalPortfolio" target="_blank" class="github-link">
         <svg class="github-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -35,7 +43,7 @@ Type <span class="highlight">help</span> to see available commands.
         View on GitHub
     </a>
     
-    <script src="{{ url_for('static', filename='js/terminal.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/terminal.js') }}"></script>
     <script>
       window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
