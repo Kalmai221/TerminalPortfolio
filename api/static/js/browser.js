@@ -99,13 +99,13 @@ export default async function openBrowserWithInstall(path = "/") {
   const terminal = document.getElementById("terminal");
   if (terminal) terminal.style.display = "none";
 
-  browser.innerHTML = `
+  browser.innerHTML = \`
     <div class="browser-header">
       <div class="browser-tabs">
         <div class="tab-list">
-           <div class="tab active" title="${folder}/${page}">
+           <div class="tab active" title="\${folder}/\${page}">
              <span class="tab-icon">✨</span>
-             <span class="tab-label">${page}</span>
+             <span class="tab-label">\${page}</span>
              <span class="tab-close">×</span>
            </div>
            <div class="new-tab-btn">+</div>
@@ -118,7 +118,7 @@ export default async function openBrowserWithInstall(path = "/") {
           <button id="reload-browser" class="toolbar-btn">⟳</button>
         </div>
         <div class="url-bar-container">
-          <input type="text" id="url-input" class="url-input" value="http://localhost:8080/${folder}/${page}">
+          <input type="text" id="url-input" class="url-input" value="http://localhost:8080/\${folder}/\${page}">
           <div class="url-actions">
             <span class="url-star">☆</span>
           </div>
@@ -130,7 +130,7 @@ export default async function openBrowserWithInstall(path = "/") {
       </div>
     </div>
     <div class="browser-content">Loading...</div>
-  `;
+  \`;
 
   const contentDiv = browser.querySelector(".browser-content");
   const urlInput = browser.querySelector("#url-input");
@@ -144,7 +144,7 @@ export default async function openBrowserWithInstall(path = "/") {
 
   // Reload button logic
   browser.querySelector("#reload-browser")?.addEventListener("click", () => {
-    loadBrowserContent(`${folder}/${page}`, browser);
+    loadBrowserContent(\`\${folder}/\${page}\`, browser);
   });
 
   // URL Bar Interaction
@@ -161,7 +161,7 @@ export default async function openBrowserWithInstall(path = "/") {
         }
       } else {
         // External URL simulation
-        contentDiv.innerHTML = `
+        contentDiv.innerHTML = \`
           <div class="error-page">
             <div class="error-icon">🌐⚠️</div>
             <h1>Server Not Found</h1>
@@ -173,9 +173,9 @@ export default async function openBrowserWithInstall(path = "/") {
             </ul>
             <button id="retry-btn-error" class="retry-btn">Try Again</button>
           </div>
-        `;
+        \`;
         document.getElementById("retry-btn-error")?.addEventListener("click", () => {
-           loadBrowserContent(`${folder}/${page}`, browser);
+           loadBrowserContent(\`\${folder}/\${page}\`, browser);
         });
       }
     }
@@ -202,7 +202,7 @@ export default async function openBrowserWithInstall(path = "/") {
   });
 
   // ---- LOAD WEBSITE ----
-  await loadBrowserContent(`${folder}/${page}`, browser);
+  await loadBrowserContent(\`\${folder}/\${page}\`, browser);
 
   return null;
 }
@@ -217,25 +217,25 @@ async function loadBrowserContent(path, browser) {
   const page = parts[1] || "index";
   
   if (urlInput) {
-    urlInput.value = `http://localhost:8080/\${folder}/\${page}`;
+    urlInput.value = \`http://localhost:8080/\${folder}/\${page}\`;
   }
 
   try {
-    const htmlRes = await fetch(`/static/browsersites/\${folder}/\${page}.html`);
+    const htmlRes = await fetch(\`/static/browsersites/\${folder}/\${page}.html\`);
     if (!htmlRes.ok) throw new Error("Page not found");
     const html = await htmlRes.text();
-    contentDiv.innerHTML = `<div class="site-container">\${html}</div>`;
+    contentDiv.innerHTML = \`<div class="site-container">\${html}</div>\`;
 
     // Re-inject assets
     const cssLink = document.createElement("link");
     cssLink.rel = "stylesheet";
-    cssLink.href = `/static/browsersites/\${folder}/style.css`;
+    cssLink.href = \`/static/browsersites/\${folder}/style.css\`;
     document.head.appendChild(cssLink);
 
     const jsScript = document.createElement("script");
-    jsScript.src = `/static/browsersites/\${folder}/script.js`;
+    jsScript.src = \`/static/browsersites/\${folder}/script.js\`;
     document.body.appendChild(jsScript);
   } catch (err) {
-    contentDiv.innerHTML = `<div style="padding: 20px; color: red;">Error loading page: \${err.message}</div>`;
+    contentDiv.innerHTML = \`<div style="padding: 20px; color: red;">Error loading page: \${err.message}</div>\`;
   }
 }
