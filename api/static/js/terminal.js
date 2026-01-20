@@ -50,6 +50,29 @@ document.addEventListener("keydown", async (e) => {
   if (e.target === mobileInput) return; // ignore mobile input events here
   if (document.getElementById("terminal").style.display === "none") return;
 
+  // Ctrl + L (Clear)
+  if (e.ctrlKey && e.key === "l") {
+    e.preventDefault();
+    output.innerText = "";
+    const newPrompt = document.createElement("div");
+    newPrompt.innerHTML = `<span class="prompt" id="prompt">${prompt}</span> <span id="current-line"></span><span id="cursor">█</span>`;
+    output.appendChild(newPrompt);
+    currentInput = "";
+    updateCurrentLineRef();
+    return;
+  }
+
+  // Tab completion simulation
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const matches = availableCommands.filter(c => c.startsWith(currentInput));
+    if (matches.length === 1) {
+      currentInput = matches[0];
+      if (currentLine) currentLine.textContent = currentInput;
+    }
+    return;
+  }
+
   if (e.key === "Enter") {
     const cmd = currentInput.trim();
 

@@ -82,14 +82,18 @@ export default async function openBrowserWithInstall(path = "/") {
   browser.innerHTML = `
     <div class="browser-header">
       <div class="browser-controls">
-        <button id="minimize-browser">_</button>
-        <button id="maximize-browser">□</button>
-        <button id="reload-browser">⟳</button>
-        <button id="close-browser">×</button>
+        <div class="circle red" id="close-browser"></div>
+        <div class="circle yellow" id="minimize-browser"></div>
+        <div class="circle green" id="maximize-browser"></div>
       </div>
-      <div class="url-bar">Loading...</div>
-      <div class="browser-tabs"></div>
+      <div class="browser-nav">
+        <button id="back-browser">←</button>
+        <button id="forward-browser">→</button>
+        <button id="reload-browser">⟳</button>
+      </div>
+      <div class="url-bar">http://localhost:8080/</div>
     </div>
+    <div class="browser-tabs"></div>
     <div class="browser-content">Loading...</div>
   `;
 
