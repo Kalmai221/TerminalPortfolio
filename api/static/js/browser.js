@@ -81,30 +81,95 @@ export default async function openBrowserWithInstall(path = "/") {
 
   browser.innerHTML = `
     <div class="browser-header">
-      <div class="browser-controls">
-        <div class="circle red" id="close-browser"></div>
-        <div class="circle yellow" id="minimize-browser"></div>
-        <div class="circle green" id="maximize-browser"></div>
+      <div class="browser-tabs">
+        <div class="tab-list">
+           <div class="tab active" title="${folder}/${page}">
+             <span class="tab-icon">🦊</span>
+             <span class="tab-label">${page}</span>
+             <span class="tab-close">×</span>
+           </div>
+           <div class="new-tab-btn">+</div>
+        </div>
       </div>
-      <div class="browser-nav">
-        <button id="back-browser">←</button>
-        <button id="forward-browser">→</button>
-        <button id="reload-browser">⟳</button>
+      <div class="browser-toolbar">
+        <div class="browser-nav">
+          <button id="back-browser" class="toolbar-btn">←</button>
+          <button id="forward-browser" class="toolbar-btn">→</button>
+          <button id="reload-browser" class="toolbar-btn">⟳</button>
+        </div>
+        <div class="url-bar-container">
+          <input type="text" id="url-input" class="url-input" value="http://localhost:8080/${folder}/${page}">
+          <div class="url-actions">
+            <span class="url-star">☆</span>
+          </div>
+        </div>
+        <div class="browser-menu">
+          <button id="inspect-browser" class="toolbar-btn" title="Inspect Element">🛠</button>
+          <button id="close-browser-btn" class="toolbar-btn close">×</button>
+        </div>
       </div>
-      <div class="url-bar">http://localhost:8080/</div>
     </div>
-    <div class="browser-tabs"></div>
     <div class="browser-content">Loading...</div>
   `;
 
   const contentDiv = browser.querySelector(".browser-content");
-  const urlBar = browser.querySelector(".url-bar");
-  const tabsDiv = browser.querySelector(".browser-tabs");
+  const urlInput = browser.querySelector("#url-input");
 
   // ---- BROWSER CONTROLS ----
-  browser.querySelector("#close-browser")?.addEventListener("click", () => {
+  browser.querySelector("#close-browser-btn")?.addEventListener("click", () => {
     browser.remove();
     if (terminal) terminal.style.display = "flex";
+  });
+
+  // URL Bar Interaction
+  urlInput.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter") {
+      const url = urlInput.value.trim();
+      if (url.includes("localhost:8080") || url.includes("127.0.0.1:8080")) {
+        // Parse folder/page from URL
+        const pathMatch = url.split("8080/")[1];
+        if (pathMatch) {
+          await loadBrowserContent(pathMatch, browser);
+        } else {
+          await loadBrowserContent("index", browser);
+        }
+      } else {
+        // External URL simulation
+        contentDiv.innerHTML = `
+          <div class="error-page">
+            <div class="error-icon">🌐⚠️</div>
+            <h1>Server Not Found</h1>
+            <p>Firefox can’t find the server at <strong>${url}</strong>.</p>
+            <ul>
+              <li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com</li>
+              <li>If you are unable to load any pages, check your computer’s network connection.</li>
+              <li>If your computer or network is protected by a firewall or proxy, make sure that Firefox is permitted to access the Web.</li>
+            </ul>
+            <button onclick="window.location.reload()" class="retry-btn">Try Again</button>
+          </div>
+        `;
+      }
+    }
+  });
+
+  // Inspect Element with Eruda
+  browser.querySelector("#inspect-browser")?.addEventListener("click", () => {
+    if (window.eruda) {
+       if (window.eruda._isInit) {
+         window.eruda.show();
+       } else {
+         window.eruda.init();
+         window.eruda.show();
+       }
+    } else {
+      const script = document.createElement('script');
+      script.src = "//cdn.jsdelivr.net/npm/eruda";
+      script.onload = () => {
+        eruda.init();
+        eruda.show();
+      };
+      document.head.appendChild(script);
+    }
   });
   // Minimize button
   const minimizeBtn = browser.querySelector("#minimize-browser");

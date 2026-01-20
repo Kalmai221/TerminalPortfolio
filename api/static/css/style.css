@@ -169,9 +169,9 @@ body {
 }
 
 .fake-browser {
-  all: initial; /* reset inherited styles */
-  font-family: "Ubuntu", sans-serif;
-  color: #000;
+  all: initial;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
   z-index: 2000;
   position: fixed;
   top: 0;
@@ -180,81 +180,144 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  border: 1px solid #888;
-  transition: all 0.3s ease;
+  background: #f9f9fb;
   overflow: hidden;
-  touch-action: none; /* allows touch drag */
 }
 
-.fake-browser.minimized {
-  width: 90%;
-  max-width: 400px;
-  height: 35%;
-  max-height: 300px;
-  top: 10%;
-  left: 5%;
-  cursor: grab;
-}
-
-
-/* Browser top bar */
+/* Firefox Header */
 .browser-header {
+  background: #f0f0f4;
+  border-bottom: 1px solid #cfcfd8;
   display: flex;
-  align-items: center;
-  background: #2b2b2b;
-  color: #ccc;
-  padding: 5px 10px;
-  font-size: 14px;
+  flex-direction: column;
 }
 
-.browser-controls {
-  display: flex;
-  gap: 6px;
-  margin-right: 10px;
-}
-
-.browser-controls .circle {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.browser-controls .red { background: #e74c3c; }
-.browser-controls .yellow { background: #f1c40f; }
-.browser-controls .green { background: #2ecc71; }
-
-.url-bar {
-  flex: 1;
-  background: #fff;
-  color: #333;
-  padding: 4px 8px;
-  border-radius: 3px;
-  font-family: monospace;
-}
-
-/* Tabs under URL bar */
 .browser-tabs {
+  padding-top: 8px;
+  padding-left: 8px;
   display: flex;
-  background: #3c3c3c;
-  padding-left: 10px;
+  align-items: flex-end;
+}
+
+.tab-list {
+  display: flex;
+  gap: 4px;
 }
 
 .tab {
+  background: #e0e0e6;
   padding: 6px 12px;
-  color: #aaa;
-  cursor: pointer;
-  font-size: 13px;
+  border-radius: 8px 8px 0 0;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  max-width: 200px;
+  border: 1px solid transparent;
+  cursor: default;
 }
 
 .tab.active {
-  background: #fff;
-  color: #000;
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
+  background: #f9f9fb;
+  border-color: #cfcfd8;
+  border-bottom-color: #f9f9fb;
+  z-index: 1;
 }
+
+.tab-icon { font-size: 14px; }
+.tab-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-close { font-size: 16px; color: #5b5b66; cursor: pointer; border-radius: 4px; padding: 0 4px; }
+.tab-close:hover { background: #d7d7db; }
+
+.new-tab-btn {
+  padding: 4px 8px;
+  font-size: 18px;
+  color: #5b5b66;
+  cursor: pointer;
+}
+
+/* Toolbar */
+.browser-toolbar {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f9f9fb;
+}
+
+.browser-nav { display: flex; gap: 4px; }
+
+.toolbar-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #20123a;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.toolbar-btn:hover { background: #e0e0e6; }
+.toolbar-btn.close { font-size: 20px; color: #5b5b66; }
+.toolbar-btn.close:hover { background: #e22850; color: #fff; }
+
+.url-bar-container {
+  flex: 1;
+  background: #f0f0f4;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid #cfcfd8;
+}
+
+.url-bar-container:focus-within {
+  border-color: #0060df;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 96, 223, 0.2);
+}
+
+.url-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #15141a;
+  padding: 4px 0;
+}
+
+.url-star { color: #5b5b66; font-size: 16px; cursor: pointer; }
+
+/* Error Page */
+.error-page {
+  max-width: 600px;
+  margin: 100px auto;
+  padding: 40px;
+  text-align: left;
+  font-family: sans-serif;
+  color: #15141a;
+}
+
+.error-icon { font-size: 48px; margin-bottom: 20px; }
+.error-page h1 { font-size: 24px; margin-bottom: 16px; font-weight: bold; }
+.error-page p { margin-bottom: 16px; line-height: 1.5; }
+.error-page ul { margin-left: 20px; margin-bottom: 24px; }
+.error-page li { margin-bottom: 8px; line-height: 1.4; }
+
+.retry-btn {
+  background: #0060df;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retry-btn:hover { background: #003eaa; }
 
 /* Content area */
 .browser-content {
