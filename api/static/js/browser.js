@@ -5,7 +5,7 @@ export default async function openBrowserWithInstall(path = "/") {
   const page = parts[1] || "index";
 
   // ---- INSTALL SIMULATION ----
-  const packages = ["xorg", "lightdm", "firefox", "web-server"];
+  const packages = ["xorg", "lightdm", "kalbrowser", "web-server"];
   const installedPackages = ["xorg"]; // simulate already installed
   const container = document.createElement("div");
   container.className = "command-output";
@@ -66,7 +66,7 @@ export default async function openBrowserWithInstall(path = "/") {
     `[${new Date().toLocaleTimeString()}] INFO: Loading assets...`,
     `[${new Date().toLocaleTimeString()}] DEBUG: Connecting to database...`,
     `[${new Date().toLocaleTimeString()}] INFO: Server listening on port 8080`,
-    `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/index.html 200 OK`,
+    `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/${page}.html 200 OK`,
     `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/style.css 200 OK`,
     `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/script.js 200 OK`
   ];
@@ -82,7 +82,7 @@ export default async function openBrowserWithInstall(path = "/") {
   }
 
   const launchLine = document.createElement("div");
-  launchLine.textContent = "Launching Firefox...";
+  launchLine.textContent = "Launching KalBrowser...";
   container.appendChild(launchLine);
   container.scrollTop = container.scrollHeight;
   await new Promise(res => setTimeout(res, 800));
@@ -98,16 +98,13 @@ export default async function openBrowserWithInstall(path = "/") {
   // Hide terminal while browser is active
   const terminal = document.getElementById("terminal");
   if (terminal) terminal.style.display = "none";
-  
-  // Disable terminal keyboard events by adding a flag or checking visibility
-  // terminal.js already checks visibility, but we ensure it's hidden.
 
   browser.innerHTML = `
     <div class="browser-header">
       <div class="browser-tabs">
         <div class="tab-list">
            <div class="tab active" title="${folder}/${page}">
-             <span class="tab-icon">🦊</span>
+             <span class="tab-icon">✨</span>
              <span class="tab-label">${page}</span>
              <span class="tab-close">×</span>
            </div>
@@ -117,7 +114,7 @@ export default async function openBrowserWithInstall(path = "/") {
       <div class="browser-toolbar">
         <div class="browser-nav">
           <button id="back-browser" class="toolbar-btn">←</button>
-          <button id="forward-browser" class="toolbar-btn">→</button>
+          <button id="forward-browser">→</button>
           <button id="reload-browser" class="toolbar-btn">⟳</button>
         </div>
         <div class="url-bar-container">
@@ -141,7 +138,13 @@ export default async function openBrowserWithInstall(path = "/") {
   // ---- BROWSER CONTROLS ----
   browser.querySelector("#close-browser-btn")?.addEventListener("click", () => {
     browser.remove();
-    if (terminal) terminal.style.display = "flex";
+    const terminalElem = document.getElementById("terminal");
+    if (terminalElem) terminalElem.style.display = "flex";
+  });
+
+  // Reload button logic
+  browser.querySelector("#reload-browser")?.addEventListener("click", () => {
+    loadBrowserContent(`${folder}/${page}`, browser);
   });
 
   // URL Bar Interaction
@@ -162,15 +165,18 @@ export default async function openBrowserWithInstall(path = "/") {
           <div class="error-page">
             <div class="error-icon">🌐⚠️</div>
             <h1>Server Not Found</h1>
-            <p>Firefox can’t find the server at <strong>${url}</strong>.</p>
+            <p>KalBrowser can’t find the server at <strong>${url}</strong>.</p>
             <ul>
               <li>Check the address for typing errors such as <strong>ww</strong>.example.com instead of <strong>www</strong>.example.com</li>
               <li>If you are unable to load any pages, check your computer’s network connection.</li>
-              <li>If your computer or network is protected by a firewall or proxy, make sure that Firefox is permitted to access the Web.</li>
+              <li>If your computer or network is protected by a firewall or proxy, make sure that KalBrowser is permitted to access the Web.</li>
             </ul>
-            <button onclick="window.location.reload()" class="retry-btn">Try Again</button>
+            <button id="retry-btn-error" class="retry-btn">Try Again</button>
           </div>
         `;
+        document.getElementById("retry-btn-error")?.addEventListener("click", () => {
+           loadBrowserContent(`${folder}/${page}`, browser);
+        });
       }
     }
   });
@@ -194,69 +200,9 @@ export default async function openBrowserWithInstall(path = "/") {
       document.head.appendChild(script);
     }
   });
-  // Minimize button
-  const minimizeBtn = browser.querySelector("#minimize-browser");
-  minimizeBtn.addEventListener("click", () => {
-    browser.classList.toggle("minimized");
-    browser.style.position = browser.classList.contains("minimized") ? "absolute" : "";
-    browser.style.width = browser.classList.contains("minimized") ? "300px" : "100vw";
-    browser.style.height = browser.classList.contains("minimized") ? "200px" : "100vh";
-    browser.style.top = browser.classList.contains("minimized") ? "50px" : "";
-    browser.style.left = browser.classList.contains("minimized") ? "50px" : "";
-  });
-
-  // Drag handler
-  const header = browser.querySelector(".browser-header");
-  let isDragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  header.addEventListener("mousedown", (e) => {
-    if (!browser.classList.contains("minimized")) return; // only drag when minimized
-    isDragging = true;
-    offsetX = e.clientX - browser.offsetLeft;
-    offsetY = e.clientY - browser.offsetTop;
-    browser.style.transition = "none"; // disable transitions while dragging
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    browser.style.left = `${e.clientX - offsetX}px`;
-    browser.style.top = `${e.clientY - offsetY}px`;
-  });
-
-  document.addEventListener("mouseup", () => {
-    if (!isDragging) return;
-    isDragging = false;
-    browser.style.transition = ""; // restore transitions
-  });
-
-
-  // ---- Smooth Reload ----
-  browser.querySelector("#reload-browser")?.addEventListener("click", async () => {
-    contentDiv.style.transition = "opacity 0.3s ease";
-    contentDiv.style.opacity = 0;        // fade out
-    contentDiv.innerHTML = "";            // clear previous content
-    contentDiv.style.background = "#fff"; // white screen
-
-    const spinner = document.createElement("div");
-    spinner.textContent = "⏳ Reloading...";
-    spinner.style.textAlign = "center";
-    spinner.style.padding = "50px 0";
-    contentDiv.appendChild(spinner);
-
-    await new Promise(res => setTimeout(res, 400)); // brief delay for UX
-
-    // Reload page content
-    await loadBrowserContent(path, browser);
-
-    // fade in
-    contentDiv.style.opacity = 1;
-    contentDiv.style.background = "transparent";
-  });
 
   // ---- LOAD WEBSITE ----
-  await loadBrowserContent(path, browser);
+  await loadBrowserContent(`${folder}/${page}`, browser);
 
   return null;
 }
@@ -264,37 +210,23 @@ export default async function openBrowserWithInstall(path = "/") {
 // ---- Helper function to load page content ----
 async function loadBrowserContent(path, browser) {
   const contentDiv = browser.querySelector(".browser-content");
-  const urlBar = browser.querySelector(".url-bar");
-  const tabsDiv = browser.querySelector(".browser-tabs");
+  const urlInput = browser.querySelector("#url-input");
 
   const parts = path.split("/").filter(p => p);
   const folder = parts[0] || "index";
   const page = parts[1] || "index";
-  urlBar.textContent = `http://127.0.0.1:8080/${folder}/${page}`;
+  
+  if (urlInput) {
+    urlInput.value = `http://localhost:8080/${folder}/${page}`;
+  }
 
   try {
-    const manifestRes = await fetch(`/static/browsersites/${folder}/manifest.json`);
-    let pages = ["index"];
-    if (manifestRes.ok) pages = await manifestRes.json();
-
-    tabsDiv.innerHTML = "";
-    pages.forEach(p => {
-      const tab = document.createElement("div");
-      tab.className = `tab${p === page ? " active" : ""}`;
-      tab.textContent = p;
-      tab.addEventListener("click", () => {
-        if (p !== page) {
-          loadBrowserContent(`/${folder}/${p}`, browser);
-        }
-      });
-      tabsDiv.appendChild(tab);
-    });
-
     const htmlRes = await fetch(`/static/browsersites/${folder}/${page}.html`);
     if (!htmlRes.ok) throw new Error("Page not found");
     const html = await htmlRes.text();
     contentDiv.innerHTML = `<div class="site-container">${html}</div>`;
 
+    // Re-inject assets
     const cssLink = document.createElement("link");
     cssLink.rel = "stylesheet";
     cssLink.href = `/static/browsersites/${folder}/style.css`;
@@ -304,6 +236,6 @@ async function loadBrowserContent(path, browser) {
     jsScript.src = `/static/browsersites/${folder}/script.js`;
     document.body.appendChild(jsScript);
   } catch (err) {
-    contentDiv.textContent = "Error loading page: " + err.message;
+    contentDiv.innerHTML = \`<div style="padding: 20px; color: red;">Error loading page: \${err.message}</div>\`;
   }
 }
