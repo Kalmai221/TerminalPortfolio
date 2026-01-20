@@ -180,7 +180,11 @@ async function loadBrowserContent(path, browser) {
       const tab = document.createElement("div");
       tab.className = `tab${p === page ? " active" : ""}`;
       tab.textContent = p;
-      tab.addEventListener("click", () => openBrowserWithInstall(`/${folder}/${p}`));
+      tab.addEventListener("click", () => {
+        if (p !== page) {
+          loadBrowserContent(`/${folder}/${p}`, browser);
+        }
+      });
       tabsDiv.appendChild(tab);
     });
 
