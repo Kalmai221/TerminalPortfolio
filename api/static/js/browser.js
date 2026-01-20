@@ -270,24 +270,259 @@ function initBrowserUI(initialPath) {
         state.isLoading = true;
         loader.style.width = "40%";
         tabLabel.textContent = "Resolving...";
+
         await sleep(800);
+
         loader.style.width = "100%";
         urlInput.value = url.startsWith("http") ? url : `http://${url}`;
 
         iframe.srcdoc = `
             <html>
-            <body style="font-family: 'Segoe UI', sans-serif; color: #202124; padding: 10% 20px; max-width: 600px; margin: 0 auto;">
-                <div style="font-size: 72px; margin-bottom: 20px;">🦖</div>
-                <h1>This site can't be reached</h1>
+            <head>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; color: #5f6368; padding: 5% 20px; max-width: 600px; margin: 0 auto; user-select: none; }
+                    h1 { font-size: 24px; font-weight: 500; margin-bottom: 10px; color: #202124; }
+                    p { font-size: 15px; margin-bottom: 20px; }
+                    .error-code { color: #5f6368; font-size: 12px; margin-top: 20px; text-transform: uppercase; }
+
+                    /* Game Canvas Styles */
+                    #game-container { width: 100%; height: 150px; position: relative; border-bottom: 1px solid #5f6368; margin-bottom: 30px; overflow: hidden; }
+                    canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; } /* Pixel art look */
+                    .press-space { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 18px; color: #5f6368; font-family: monospace; }
+                </style>
+            </head>
+            <body>
+                <div id="game-container" onclick="jump()">
+                    <canvas id="game" width="600" height="150"></canvas>
+                    <div id="msg" class="press-space">PRESS SPACE TO PLAY</div>
+                </div>
+
+                <h1>No internet</h1>
+                <p>Try:</p>
+                <ul>
+                    <li>Checking the network cables, modem, and router</li>
+                    <li>Reconnecting to Wi-Fi</li>
+                </ul>
                 <p><strong>${url}</strong>’s server IP address could not be found.</p>
-                <div style="margin-top: 30px; font-size: 12px; color: #5f6368;">DNS_PROBE_FINISHED_NXDOMAIN</div>
-                <button onclick="window.location.reload()" style="margin-top: 30px; background: #0b57d0; color: white; border: none; padding: 10px 24px; border-radius: 18px; cursor: pointer;">Reload</button>
-                <script src="//cdn.jsdelivr.net/npm/eruda"><\/script>
+                <div class="error-code">DNS_PROBE_FINISHED_NO_INTERNET</div>
+
+                <script>
+                    const canvas = document.getElementById("game");
+                    const ctx = canvas.getContext("2d");
+                    const msg = document.getElementById("msg");
+
+                    // --- PIXEL ART ASSETS (0 = Empty, 1 = Filled) ---
+                    // These binary maps allow us to draw real shapes without image files
+
+                    const DINO_STAND = [
+                        "000000111110",
+                        "000000111111",
+                        "000000111000",
+                        "000000111000",
+                        "000000111000", // Head
+                        "100001111100",
+                        "100001111100",
+                        "111111111100", // Body
+                        "001111111000",
+                        "000111110000",
+                        "000110011000", // Legs
+                        "000110011000"
+                    ];
+
+                    const DINO_RUN_1 = [
+                        ...DINO_STAND.slice(0, 10),
+                        "000110000000", // Left leg fwd
+                        "000110000000" 
+                    ];
+
+                    const DINO_RUN_2 = [
+                        ...DINO_STAND.slice(0, 10),
+                        "000000011000", // Right leg fwd
+                        "000000011000"
+                    ];
+
+                    const CACTUS_SMALL = [
+                        "00011000",
+                        "00111100",
+                        "01111110",
+                        "11011011",
+                        "11011011",
+                        "11011011",
+                        "11011011",
+                        "00011000",
+                        "00011000"
+                    ];
+
+                    // --- GAME STATE ---
+                    // Scale factor makes the pixels bigger (Retro look)
+                    const SCALE = 2; 
+                    let dino = { x: 40, y: 110, width: 12 * SCALE, height: 12 * SCALE, dy: 0, jumpPower: -11, grounded: true, animTimer: 0 };
+                    let gravity = 0.8;
+                    let obstacles = [];
+                    let clouds = [];
+                    let frame = 0;
+                    let score = 0;
+                    let gameRunning = false;
+                    let gameSpeed = 5;
+
+                    // --- DRAWING HELPER ---
+                    function drawSprite(ctx, map, startX, startY, color = "#535353") {
+                        ctx.fillStyle = color;
+                        for (let r = 0; r < map.length; r++) {
+                            const row = map[r];
+                            for (let c = 0; c < row.length; c++) {
+                                if (row[c] === "1") {
+                                    // Draw a square for each "1" in the map
+                                    ctx.fillRect(startX + (c * SCALE), startY + (r * SCALE), SCALE, SCALE);
+                                }
+                            }
+                        }
+                    }
+
+                    function start() {
+                        if (gameRunning) return;
+                        gameRunning = true;
+                        msg.style.display = "none";
+                        obstacles = [];
+                        clouds = [];
+                        score = 0;
+                        gameSpeed = 5;
+                        dino.y = 110;
+                        loop();
+                    }
+
+                    function jump() {
+                        if (!gameRunning) { start(); return; }
+                        if (dino.grounded) {
+                            dino.dy = dino.jumpPower;
+                            dino.grounded = false;
+                        }
+                    }
+
+                    function update() {
+                        // Dino Physics
+                        dino.dy += gravity;
+                        dino.y += dino.dy;
+
+                        // Ground Collision
+                        const groundY = 125 - dino.height; // Floor level
+                        if (dino.y > groundY) {
+                            dino.y = groundY;
+                            dino.dy = 0;
+                            dino.grounded = true;
+                        }
+
+                        // Clouds (Background decoration)
+                        if (frame % 100 === 0 && Math.random() > 0.5) {
+                            clouds.push({ x: 600, y: Math.random() * 80 + 10 });
+                        }
+                        clouds.forEach((c, i) => {
+                            c.x -= 1; // Clouds move slow
+                            if (c.x < -50) clouds.splice(i, 1);
+                        });
+
+                        // Obstacles (Spawn & Move)
+                        if (frame % 100 === 0) {
+                            // Randomize spawn time slightly
+                            if (Math.random() > 0.1) {
+                                obstacles.push({ x: 600, y: 125 - (9 * SCALE), map: CACTUS_SMALL, w: 8 * SCALE, h: 9 * SCALE });
+                            }
+                        }
+
+                        obstacles.forEach((obs, index) => {
+                            obs.x -= gameSpeed;
+
+                            // Hitbox Collision (Simple box overlap)
+                            // We shrink the hitbox slightly (padding) to be forgiving
+                            const padding = 4; 
+                            if (
+                                dino.x + padding < obs.x + obs.w - padding &&
+                                dino.x + dino.width - padding > obs.x + padding &&
+                                dino.y + padding < obs.y + obs.h - padding &&
+                                dino.y + dino.height - padding > obs.y + padding
+                            ) {
+                                gameOver();
+                            }
+
+                            if (obs.x + obs.w < 0) obstacles.splice(index, 1);
+                        });
+
+                        // Speed up game slowly
+                        if (frame % 500 === 0) gameSpeed += 0.5;
+
+                        score++;
+                        frame++;
+                        dino.animTimer++;
+                    }
+
+                    function gameOver() {
+                        gameRunning = false;
+                        msg.textContent = "GAME OVER";
+                        msg.style.display = "block";
+
+                        // Draw "Dead" Dino eyes (optional polish)
+                        // But for now we just stop
+                    }
+
+                    function draw() {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                        // 1. Draw Clouds
+                        ctx.fillStyle = "#acacac";
+                        clouds.forEach(c => {
+                            ctx.fillRect(c.x, c.y, 30, 8); // Simple cloud shape
+                            ctx.fillRect(c.x + 10, c.y - 5, 15, 5);
+                        });
+
+                        // 2. Draw Ground Line
+                        ctx.fillStyle = "#535353";
+                        ctx.fillRect(0, 130, 600, 1);
+
+                        // 3. Draw Dino (Animated)
+                        let currentMap = DINO_STAND;
+                        if (gameRunning) {
+                             // Switch leg frame every 10 ticks
+                             currentMap = (Math.floor(dino.animTimer / 10) % 2 === 0) ? DINO_RUN_1 : DINO_RUN_2;
+                        }
+                        // If jumping, stick to stand frame
+                        if (!dino.grounded) currentMap = DINO_STAND;
+
+                        drawSprite(ctx, currentMap, dino.x, dino.y);
+
+                        // 4. Draw Obstacles
+                        obstacles.forEach(obs => {
+                            drawSprite(ctx, obs.map, obs.x, obs.y);
+                        });
+
+                        // 5. Draw Score
+                        ctx.fillStyle = "#535353";
+                        ctx.font = "20px monospace";
+                        ctx.fillText("HI " + Math.floor(score/5).toString().padStart(5, '0'), 500, 30);
+                    }
+
+                    function loop() {
+                        if (!gameRunning) return;
+                        update();
+                        draw();
+                        requestAnimationFrame(loop);
+                    }
+
+                    // Controls
+                    document.addEventListener("keydown", (e) => {
+                        if (e.code === "Space" || e.code === "ArrowUp") {
+                            e.preventDefault(); 
+                            jump();
+                        }
+                    });
+
+                    // Initial Render
+                    draw();
+                </script>
             </body>
             </html>
         `;
 
-        tabLabel.textContent = "Server Not Found";
+        tabLabel.textContent = "No Internet";
         if (addToHistory) {
             state.history.push(url);
             state.currentIndex++;
