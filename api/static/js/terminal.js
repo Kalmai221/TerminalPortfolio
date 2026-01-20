@@ -48,7 +48,8 @@ async function runCommand(cmd) {
 
 document.addEventListener("keydown", async (e) => {
   if (e.target === mobileInput) return; // ignore mobile input events here
-  if (document.getElementById("terminal").style.display === "none") return;
+  const termElem = document.getElementById("terminal");
+  if (!termElem || termElem.style.display === "none") return;
 
   // Ctrl + L (Clear)
   if (e.ctrlKey && e.key === "l") {

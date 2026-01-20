@@ -1,5 +1,8 @@
 export default async function openBrowserWithInstall(path = "/") {
   const output = document.getElementById("output");
+  const parts = path.split("/").filter(p => p);
+  const folder = parts[0] || "index";
+  const page = parts[1] || "index";
 
   // ---- INSTALL SIMULATION ----
   const packages = ["xorg", "lightdm", "firefox", "web-server"];
@@ -53,16 +56,36 @@ export default async function openBrowserWithInstall(path = "/") {
   }
 
   const serverLine = document.createElement("div");
-  serverLine.textContent = "Starting web server at http://127.0.0.1:8080";
+  serverLine.innerHTML = `<span style="color: #8ae234">[  OK  ]</span> Starting web server at http://127.0.0.1:8080`;
   container.appendChild(serverLine);
   container.scrollTop = container.scrollHeight;
   await new Promise(res => setTimeout(res, 600));
 
+  // Realistic website logs
+  const logMsgs = [
+    `[${new Date().toLocaleTimeString()}] INFO: Loading assets...`,
+    `[${new Date().toLocaleTimeString()}] DEBUG: Connecting to database...`,
+    `[${new Date().toLocaleTimeString()}] INFO: Server listening on port 8080`,
+    `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/index.html 200 OK`,
+    `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/style.css 200 OK`,
+    `[${new Date().toLocaleTimeString()}] GET /static/browsersites/${folder}/script.js 200 OK`
+  ];
+
+  for (let msg of logMsgs) {
+    const line = document.createElement("div");
+    line.style.color = "#ccc";
+    line.style.fontSize = "0.9em";
+    line.textContent = msg;
+    container.appendChild(line);
+    container.scrollTop = container.scrollHeight;
+    await new Promise(res => setTimeout(res, 100 + Math.random() * 200));
+  }
+
   const launchLine = document.createElement("div");
-  launchLine.textContent = "Launching browser...";
+  launchLine.textContent = "Launching Firefox...";
   container.appendChild(launchLine);
   container.scrollTop = container.scrollHeight;
-  await new Promise(res => setTimeout(res, 600));
+  await new Promise(res => setTimeout(res, 800));
 
   // ---- BROWSER UI ----
   let browser = document.querySelector(".fake-browser");
