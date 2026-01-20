@@ -72,6 +72,13 @@ export default async function openBrowserWithInstall(path = "/") {
     document.body.appendChild(browser);
   }
 
+  // Hide terminal while browser is active
+  const terminal = document.getElementById("terminal");
+  if (terminal) terminal.style.display = "none";
+  
+  // Disable terminal keyboard events by adding a flag or checking visibility
+  // terminal.js already checks visibility, but we ensure it's hidden.
+
   browser.innerHTML = `
     <div class="browser-header">
       <div class="browser-controls">
@@ -91,7 +98,10 @@ export default async function openBrowserWithInstall(path = "/") {
   const tabsDiv = browser.querySelector(".browser-tabs");
 
   // ---- BROWSER CONTROLS ----
-  browser.querySelector("#close-browser")?.addEventListener("click", () => browser.remove());
+  browser.querySelector("#close-browser")?.addEventListener("click", () => {
+    browser.remove();
+    if (terminal) terminal.style.display = "flex";
+  });
   // Minimize button
   const minimizeBtn = browser.querySelector("#minimize-browser");
   minimizeBtn.addEventListener("click", () => {
