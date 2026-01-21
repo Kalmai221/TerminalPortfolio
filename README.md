@@ -1,119 +1,151 @@
+# 🖥️ KalOS Terminal Portfolio
 
-# KalOS Terminal Portfolio
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.9+-blue)
+![Flask](https://img.shields.io/badge/backend-Flask-black)
+![Vercel](https://img.shields.io/badge/deploy-Vercel-white)
 
-A retro-style terminal portfolio website built with Flask that simulates a Linux terminal environment. Features a boot sequence animation and interactive command-line interface to explore my professional background.
+> **Access the live terminal:** [kalsites.vercel.app/portfolio](https://kalsites.vercel.app/portfolio)
 
-## 🚀 Features
+A fully interactive, retro-styled operating system simulation built for the modern web. This project acts as a developer portfolio, presenting professional experience through a Linux-like terminal interface and a simulated GUI browser.
 
-- **Boot Sequence**: Realistic system startup animation
-- **Interactive Terminal**: Command-line interface with command history
-- **Dynamic Commands**: Modular command system with easy extensibility
-- **Responsive Design**: Works on desktop and mobile devices
-- **GitHub Integration**: Direct link to source code
+## ✨ Key Features
+
+### 📟 The Terminal Core
+- **Realistic Boot Sequence:** System checks, service startups, and kernel logging animations.
+- **Command Registry System:** A scalable architecture for handling commands without server overload.
+- **Tab Completion & History:** Arrow keys and Tab support for a native shell feel.
+- **Mobile Optimized:** Custom virtual keyboard handling and responsive layout.
+
+### 🌐 Simulated Browser GUI
+- **In-Terminal Browser:** A `mywork` command launches a CSS/JS-based window manager.
+- **Tabbed Navigation:** Manage multiple "sites" within the portfolio.
+- **System Settings:** Real-time toggles for **Dark Mode**, **High Contrast**, and **Font Sizing**.
+- **Offline Dino Game:** A full HTML5 Canvas pixel-art recreation of the classic "No Internet" game, hidden in 404 pages.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Flask (Python)
-- **Frontend**: Vanilla JavaScript, HTML5, CSS3
-- **Styling**: Ubuntu Mono font, terminal-inspired dark theme
-- **Deployment**: Vercel-ready configuration
+* **Backend:** Python (Flask) - Serves the shell and API routes.
+* **Frontend:** Vanilla JavaScript (ES6+), HTML5.
+* **Styling:** CSS3 Variables (Theming), Flexbox, CSS Grid.
+* **Typography:** Fira Code & Ubuntu Mono via Google Fonts.
+* **Performance:** Zero-dependency rendering engine; highly optimized for Vercel Free Tier.
 
 ## 📁 Project Structure
 
-```
+```text
 ├── api/
+│   ├── index.py              # Flask Application Entry Point
 │   ├── static/
 │   │   ├── css/
-│   │   │   └── style.css          # Terminal styling
-│   │   └── js/
-│   │       ├── commands/          # Command modules
-│   │       │   ├── whoami.js      # About information
-│   │       │   ├── skills.js      # Technical skills
-│   │       │   ├── experience.js  # Work experience
-│   │       │   ├── education.js   # Educational background
-│   │       │   ├── pastwork.js    # Previous projects
-│   │       │   ├── contact.js     # Contact information
-│   │       │   └── ls.js          # List commands
-│   │       └── terminal.js        # Main terminal logic
-│   ├── templates/
-│   │   └── index.html             # Main page template
-│   └── index.py                   # Flask application
-├── requirements.txt               # Python dependencies
-├── vercel.json                   # Vercel deployment config
-└── .replit                       # Replit configuration
+│   │   │   └── style.css     # Unified CSS (Terminal + Browser + Boot)
+│   │   ├── js/
+│   │   │   ├── browser.js    # Browser Simulation & Dino Game Logic
+│   │   │   ├── terminal.js   # Core Shell Logic & Input Handling
+│   │   │   └── commands/
+│   │   │       └── profile.js # The "Mega Command" (Resume Data)
+│   └── templates/
+│       └── index.html        # Main Entry DOM
+├── vercel.json               # Serverless Configuration
+└── requirements.txt          # Python Dependencies
+
 ```
 
-## 🎮 Available Commands
+## 🎮 Command List
 
-- `whoami` - Display personal information
-- `skills` - Show technical skills and proficiency
-- `experience` - Work experience and current status
-- `education` - Educational background
-- `pastwork` - Previous projects and portfolio
-- `contact` - Contact information and availability
-- `ls` - List all available commands
-- `help` - Show available commands
-- `clear` - Clear the terminal screen
+| Command | Description |
+| --- | --- |
+| `profile` | **The Main Hub.** Displays WhoAmI, Education, Experience, and Skills. |
+| `profile --help` | Shows flags to filter data (e.g., `profile --skills`). |
+| `mywork` | Launches the **GUI Browser** to view projects. |
+| `settings` | Opens the System Settings UI. |
+| `ls` | Lists available executable files. |
+| `clear` | Clears the terminal buffer. |
+| `reboot` | Triggers a full system restart animation. |
 
-## 🏃‍♂️ Running Locally
+## 🚀 Getting Started
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Prerequisites
 
-2. **Run the application:**
-   ```bash
-   python api/index.py
-   ```
+* Python 3.9+
+* pip
 
-3. **Open your browser:**
-   Navigate to `http://localhost:5000`
+### Installation
 
-## 🔧 Adding New Commands
+1. **Clone the repository:**
+```bash
+git clone [https://github.com/Kalmai221/TerminalPortfolio.git](https://github.com/Kalmai221/TerminalPortfolio.git)
+cd TerminalPortfolio
 
-1. Create a new JavaScript file in `api/static/js/commands/`
-2. Export a default function that returns a string:
-   ```javascript
-   export default function mycommand() {
-     return "Your command output here";
-   }
-   ```
-3. The command will be automatically available in the terminal
+```
 
-## 🎨 Customization
 
-- **Boot Sequence**: Edit the `bootSequence` array in `terminal.js`
-- **Styling**: Modify `style.css` for colors and layout
-- **Commands**: Add/edit command files in the `commands/` directory
-- **Personal Info**: Update command files with your information
+2. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+
+```
+
+
+3. **Run locally:**
+```bash
+python api/index.py
+
+```
+
+
+4. **Access:**
+Open `http://localhost:5000` in your browser.
+
+## 🔧 Customization Guide
+
+### Editing Portfolio Data
+
+To avoid Vercel function limits, all resume data is consolidated into **Registry Files**.
+
+1. **Edit Profile Data:**
+* Open `api/static/js/commands/profile.js`.
+* Modify the JSON objects inside `whoami`, `education`, or `experience`.
+
+
+2. **Edit Browser Projects:**
+* Open `api/static/js/browser.js`.
+* Locate the `loadInternalPage` function to add new "websites" or projects.
+
+
+3. **Styling:**
+* Theme variables (Colors, Fonts) are defined in `:root` inside `style.css`.
+
+
 
 ## 📦 Deployment
 
-### Vercel
-This project is configured for Vercel deployment:
-1. Connect your GitHub repository to Vercel
-2. Deploy automatically on push to main branch
+### Vercel (Recommended)
+
+This project is optimized for Vercel's serverless architecture.
+
+1. Fork this repo.
+2. Import to Vercel.
+3. The `vercel.json` file handles the Python runtime configuration automatically.
 
 ### Replit
-1. Import the project to Replit
-2. Run using the configured `.replit` file
-3. Use Replit's deployment features for hosting
+
+1. Import repository.
+2. Run using the `.replit` config file.
 
 ## 🤝 Contributing
 
-Feel free to fork this project and customize it for your own portfolio! If you have suggestions or improvements, please open an issue or submit a pull request.
+Contributions, issues, and feature requests are welcome!
 
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 📧 Contact
-
-- **Email**: Kal@roschol.uk
-- **GitHub**: [@Kalmai221](https://github.com/Kalmai221)
-- **Location**: United Kingdom
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
-*Built with ❤️ by Kal - A retro terminal experience for the modern web*
+<div align="center">
+Built with ❤️ by <a href="https://github.com/Kalmai221">Kal</a>
+<i>Terminals never die, they just go offline.</i>
+</div>
