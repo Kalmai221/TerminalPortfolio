@@ -1,13 +1,13 @@
-# 🖥️ KalOS Terminal Portfolio
+# 🖥️ Terminal Portfolio
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Python](https://img.shields.io/badge/python-3.9+-blue)
 ![Flask](https://img.shields.io/badge/backend-Flask-black)
 ![Vercel](https://img.shields.io/badge/deploy-Vercel-white)
 
-> **Access the live terminal:** [kalsites.vercel.app/portfolio](https://kalsites.vercel.app/portfolio)
+> Companion to the main portfolio at [klhportfolio.vercel.app](https://klhportfolio.vercel.app).
 
-A fully interactive, retro-styled operating system simulation built for the modern web. This project acts as a developer portfolio, presenting professional experience through a Linux-like terminal interface and a simulated GUI browser.
+A fully interactive, retro-styled operating system simulation built for the modern web. This project is the terminal-style portfolio of Kurtis-Lee Hopewell, presenting education, work experience, skills and projects through a Linux-like terminal interface and a simulated GUI browser.
 
 ## ✨ Key Features
 
@@ -18,10 +18,13 @@ A fully interactive, retro-styled operating system simulation built for the mode
 - **Mobile Optimized:** Custom virtual keyboard handling and responsive layout.
 
 ### 🌐 Simulated Browser GUI
-- **In-Terminal Browser:** A `mywork` command launches a CSS/JS-based window manager.
+- **In-Terminal Browser:** `portfolio` simulates an apt install and a browser boot, then open a tabbed browser with working back/forward, bookmarks, settings and a new-tab page.
 - **Tabbed Navigation:** Manage multiple "sites" within the portfolio.
+- **Developer Tools (F12):** Elements (live DOM tree, editable styles, element picker), Console (run JS in the page), Sources, Network and Application panels. Cross-origin pages like the embedded portfolio can't be inspected, and the panels say so.
+- **Browser features:** tabs with context menus, bookmarks, history, find in page, zoom, view-source, an address-bar dropdown and keyboard shortcuts (see `browser://about`).
+- **CLI to GUI transition:** launching the browser fades the terminal into a small desktop with a dock; closing it plays the reverse and returns to the shell.
 - **System Settings:** Real-time toggles for **Dark Mode**, **High Contrast**, and **Font Sizing**.
-- **Offline Dino Game:** A full HTML5 Canvas pixel-art recreation of the classic "No Internet" game, hidden in 404 pages.
+- **Offline Dino Game:** A pixel-art recreation of the "No Internet" game, shown when you visit an address the browser can't reach.
 
 ## 🛠️ Tech Stack
 
@@ -40,7 +43,15 @@ A fully interactive, retro-styled operating system simulation built for the mode
 │   │   ├── css/
 │   │   │   └── style.css     # Unified CSS (Terminal + Browser + Boot)
 │   │   ├── js/
+│   │   │   ├── devtools.js   # Developer tools panel
+│   │   │   ├── transition.js # CLI <-> GUI hand-off animation
+│   │   │   ├── tui.js        # Full-screen text interface (portfolio --tui)
+│   │   │   ├── portfolio-cli.js # Terminal copy of the portfolio (portfolio --cli)
+│   │   │   ├── portfolio-data.js # Portfolio content shared by the CLI, TUI and files
 │   │   │   ├── browser.js    # Browser Simulation & Dino Game Logic
+│   │   │   ├── boot.js       # Simulated Linux boot sequence
+│   │   │   ├── docs.js       # help / man page text
+│   │   │   ├── shell.js      # Virtual filesystem & built-in commands
 │   │   │   ├── terminal.js   # Core Shell Logic & Input Handling
 │   │   │   └── commands/
 │   │   │       └── profile.js # The "Mega Command" (Resume Data)
@@ -55,11 +66,13 @@ A fully interactive, retro-styled operating system simulation built for the mode
 
 | Command | Description |
 | --- | --- |
-| `profile` | **The Main Hub.** Displays WhoAmI, Education, Experience, and Skills. |
 | `profile --help` | Shows flags to filter data (e.g., `profile --skills`). |
-| `mywork` | Launches the **GUI Browser** to view projects. |
+| `portfolio` | Pick how to view my portfolio: `--cli` (terminal output), `--tui` (full-screen text UI) or `--web` (built-in browser). With no option, an interactive picker asks. `--web --external` opens a real browser tab. |
 | `settings` | Opens the System Settings UI. |
-| `ls` | Lists available executable files. |
+| `ls`, `cd`, `cat`, `tree`, `pwd` | Browse a virtual filesystem in `~` (about.txt, projects/, ...). |
+| `neofetch`, `uname`, `whoami`, `date`, `ps`, `df`, `free` | Familiar system info commands. |
+| `grep`, `head`, `tail`, `wc`, `sort` | Text tools that work on files or on piped input (`cat skills.txt \| grep -i python`). |
+| `help`, `help <cmd>`, `<cmd> --help`, `man <cmd>` | Bash-style help and man pages. |
 | `clear` | Clears the terminal buffer. |
 | `reboot` | Triggers a full system restart animation. |
 
@@ -105,12 +118,11 @@ To avoid Vercel function limits, all resume data is consolidated into **Registry
 
 1. **Edit Profile Data:**
 * Open `api/static/js/commands/profile.js`.
-* Modify the JSON objects inside `whoami`, `education`, or `experience`.
+* Modify the `render` functions (`whoami`, `education`, `experience`, `skills`, `contact`).
 
 
 2. **Edit Browser Projects:**
-* Open `api/static/js/browser.js`.
-* Locate the `loadInternalPage` function to add new "websites" or projects.
+* The browser shows the live portfolio (https://klhportfolio.vercel.app) in an iframe. The built-in pages (new tab, offline) are in `api/static/browsersites/`.
 
 
 3. **Styling:**
@@ -128,11 +140,6 @@ This project is optimized for Vercel's serverless architecture.
 2. Import to Vercel.
 3. The `vercel.json` file handles the Python runtime configuration automatically.
 
-### Replit
-
-1. Import repository.
-2. Run using the `.replit` config file.
-
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome!
@@ -146,6 +153,6 @@ Contributions, issues, and feature requests are welcome!
 ---
 
 <div align="center">
-Built with ❤️ by <a href="https://github.com/Kalmai221">Kal</a>
+Built with ❤️ by <a href="https://github.com/Kalmai221">Kurtis-Lee Hopewell</a>
 <i>Terminals never die, they just go offline.</i>
 </div>

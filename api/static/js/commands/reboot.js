@@ -4,7 +4,7 @@ export default async function({ system }) {
     // 1. The "Wall" Broadcast (Standard Linux behavior)
     const date = new Date().toTimeString().split(' ')[0];
     print("");
-    print(`Broadcast message from root@kal-os`);
+    print(`Broadcast message from root@klh-os`);
     print(`(${date}):`);
     print("");
     print(`<span style="color:${colors.orange}; font-weight:bold;">The system is going down for reboot NOW!</span>`);
@@ -17,7 +17,7 @@ export default async function({ system }) {
         { name: "User Manager for UID 1000", type: "service" },
         { name: "Graphical Interface", type: "target" },
         { name: "Multi-User System", type: "target" },
-        { name: "KalBrowser Render Engine", type: "service" }, // Custom service
+        { name: "Browser Render Engine", type: "service" }, // Custom service
         { name: "Network Manager", type: "service" },
         { name: "D-Bus System Message Bus", type: "service" },
         { name: "Basic System", type: "target" },
