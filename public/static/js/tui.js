@@ -21,6 +21,9 @@ const esc = (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : c === ">" ? "&gt;
 let linkId = 0;
 const t = (text, s = S.text) => ({ t: text, s });
 const lnk = (text, url) => ({ t: text, s: S.link, link: { url, id: ++linkId } });
+// A link that runs an action instead of opening a URL (e.g. "web" closes the TUI and runs `portfolio --web`)
+const act = (text, action) => ({ t: text, s: S.link, link: { action, id: ++linkId } });
+const cmsActions = () => [act("View CMS Portfolio in Terminal", "web"), t("   "), lnk("View CMS Portfolio on new page", SITE)];
 const P = (segs, o = {}) => ({ segs: Array.isArray(segs) ? segs : [t(segs)], ...o });
 const blank = () => ({ blank: true });
 const rule = () => ({ rule: true });
@@ -41,6 +44,7 @@ const SECTIONS = [
             kv("GitHub", [lnk(PERSON.github.replace("https://", ""), PERSON.github)]),
             kv("LinkedIn", [lnk("linkedin.com/in/kurtishopewell", PERSON.linkedin)]),
             kv("Website", [lnk(SITE.replace("https://", ""), SITE)]), blank(),
+            P(cmsActions()), blank(),
             h2("Outside of work"), P(PERSON.outside), blank(),
             P([t("Use ", S.dim), t("↑ ↓", S.key), t(" to browse the sections, ", S.dim), t("Enter", S.key), t(" to read one.", S.dim)]),
         ],
@@ -108,6 +112,7 @@ const SECTIONS = [
                 ...p.points.map((x) => bullet(x, 3)),
                 P([t(p.tags.map((x) => `#${x.replace(/\s+/g, "")}`).join(" "), S.tag)], { indent: 2 }),
                 P(p.links.flatMap(([label, url], i) => [...(i ? [t("   ")] : []), lnk(label, url)]), { indent: 2 }),
+                ...(p.name === "Portfolio CMS" ? [P(cmsActions(), { indent: 2 })] : []),
                 blank(), rule(), blank(),
             ]),
             P([lnk("More code on GitHub", PERSON.github)]),
@@ -257,7 +262,7 @@ export function runTui({ onOpenLink } = {}) {
                     let x = 0;
                     for (const seg of line) {
                         if (seg.link) {
-                            const g = groups.get(seg.link.id) || { url: seg.link.url, pieces: [] };
+                            const g = groups.get(seg.link.id) || { url: seg.link.url, action: seg.link.action, pieces: [] };
                             const last = g.pieces[g.pieces.length - 1];
                             if (last && last.y === y && last.x + last.len === x) last.len += seg.t.length;
                             else g.pieces.push({ y, x, len: seg.t.length });
@@ -323,7 +328,7 @@ export function runTui({ onOpenLink } = {}) {
                         const y = pc.y - scroll;
                         if (y < 0 || y >= innerH) return;
                         if (gi === selLink) put(c.x + 2 + pc.x, c.y + 1 + y, vlines[pc.y].flatMap((sg) => [...sg.t]).slice(pc.x, pc.x + pc.len).join(""), S.linkSel);
-                        hits.push({ x: c.x + 2 + pc.x, y: c.y + 1 + y, w: pc.len, action: () => open(grp.url) });
+                        hits.push({ x: c.x + 2 + pc.x, y: c.y + 1 + y, w: pc.len, action: () => activate(grp) });
                     });
                 });
                 // scrollbar
@@ -339,10 +344,12 @@ export function runTui({ onOpenLink } = {}) {
             const fy = rows - 1;
             fillRow(fy, S.bar);
             let x = 1;
+            const compact = cols < 56; // on narrow screens show just the keys, not their labels
             const key = (k, label, action) => {
-                put(x, fy, k, S.barKey); put(x + k.length, fy, " " + label, S.bar);
-                if (action) hits.push({ x, y: fy, w: k.length + 1 + label.length, action });
-                x += k.length + label.length + 4;
+                const text = compact ? "" : " " + label;
+                put(x, fy, k, S.barKey); put(x + k.length, fy, text, S.bar);
+                if (action) hits.push({ x, y: fy, w: k.length + text.length, action });
+                x += k.length + text.length + (compact ? 2 : 3);
             };
             if (focus === "menu") { key("↑↓", "select"); key("Enter", "open", () => { focus = "content"; draw(); }); }
             else { key("↑↓", "scroll"); key("Tab", "next link"); key("Enter", "open link", () => openSelected()); key("←", "menu", () => { focus = "menu"; draw(); }); }
@@ -375,6 +382,11 @@ export function runTui({ onOpenLink } = {}) {
             scroll = 0;
             selLink = -1;
         }
+        // Run a link: either an action (closes the TUI) or a URL
+        function activate(grp) {
+            if (grp.action === "web") return quit("web");
+            open(grp.url);
+        }
         function open(url) {
             if (onOpenLink) onOpenLink(url);
             else if (url.startsWith("mailto:")) window.location.href = url;
@@ -383,7 +395,7 @@ export function runTui({ onOpenLink } = {}) {
         function openSelected() {
             const g = geometry();
             const { groups } = contentLayout(g.content.w - 5);
-            if (selLink >= 0 && groups[selLink]) open(groups[selLink].url);
+            if (selLink >= 0 && groups[selLink]) activate(groups[selLink]);
         }
         function cycleLink(dir) {
             const g = geometry();
@@ -446,13 +458,13 @@ export function runTui({ onOpenLink } = {}) {
             draw();
         }
 
-        function quit() {
+        function quit(result) {
             document.removeEventListener("keydown", onKey, true);
             window.removeEventListener("resize", onResize);
             clearInterval(clockTimer);
             root.classList.add("tui-out");
             setTimeout(() => root.remove(), 160);
-            resolve();
+            resolve(result);
         }
         const onResize = () => { measure(); cache.key = ""; draw(); };
 

@@ -43,7 +43,12 @@ export default async function({ flags, system }) {
         await printPortfolio({ flags: passed, system });
     } else if (mode === "tui") {
         const { runTui } = await import("../tui.js");
-        await runTui();
+        const next = await runTui();
+        if (next === "web") {
+            // "View CMS Portfolio in Terminal" in the TUI closes it and runs `portfolio --web`
+            print(`<span class="prompt-user">guest@klh-os</span>:<span class="prompt-path">~</span>$ portfolio --web`);
+            await launchBrowser({ flags, system, path: URL });
+        }
     } else if (flags.external) {
         openExternal({ print, colors });
     } else {

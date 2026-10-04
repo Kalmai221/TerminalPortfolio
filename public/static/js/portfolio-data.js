@@ -78,7 +78,7 @@ export const SKILLS = [
 
 export const PROJECTS = [
     {
-        name: "Portfolio CMS", tagline: "The site you're on", status: "Live",
+        name: "Portfolio CMS", tagline: "The CMS behind my portfolio website", status: "Live",
         text: "I wanted to change my portfolio without redeploying it, so I built a small CMS. Pages are stored in MongoDB and served by Flask on Vercel, and I edit them from an editor in the browser.",
         points: [
             "In-browser editor with a live preview and an audit log of every change.",
@@ -90,12 +90,12 @@ export const PROJECTS = [
         links: [["Try the editor", `${SITE}/trial`], ["Source code", "https://github.com/Kalmai221/portfolio"]],
     },
     {
-        name: "Terminal Portfolio", tagline: "This portfolio, as a Linux terminal", status: "Live",
+        name: "Terminal Portfolio", tagline: "The site you're on", status: "Live",
         text: "A terminal-style version of my portfolio that runs in the browser. It simulates a Linux shell with a virtual filesystem, pipes and tab completion, boots like a real machine, and has a built-in browser with developer tools and a full-screen text interface. Flask serves the page and Vercel serves everything else as static files.",
         points: [
             "A simulated bash shell: ls, cat, grep, man and more, working on a virtual filesystem.",
             "A built-in browser with tabs, bookmarks and developer tools.",
-            "The portfolio command shows this portfolio in the terminal, a text interface or the browser.",
+            "The portfolio command shows my portfolio in the terminal, a text interface or the browser.",
             "Vanilla JavaScript, with no frameworks.",
         ],
         tags: ["Python", "Flask", "JavaScript", "Vercel"],
