@@ -1,0 +1,30 @@
+<div class="newtab" data-title="New Tab" data-icon="✨">
+  <div class="logo">🧭</div>
+  <h1>KLH Browser</h1>
+  <form id="search" autocomplete="off">
+    <input id="q" type="text" placeholder="Search or type an address, e.g. klhportfolio.vercel.app" aria-label="Search or enter address" autofocus>
+  </form>
+  <nav class="tiles" id="tiles"></nav>
+  <script>
+    var api = window.parent.browserAPI;
+    document.getElementById("search").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var value = document.getElementById("q").value;
+      if (value.trim()) api.navigate(value);
+    });
+    var tiles = document.getElementById("tiles");
+    api.getBookmarks().forEach(function (b) {
+      var a = document.createElement("a");
+      a.className = "tile";
+      a.href = b.url;
+      var i = document.createElement("span"); i.textContent = b.icon || "⭐";
+      a.append(i, document.createTextNode(b.title));
+      tiles.append(a);
+    });
+    var s = document.createElement("a");
+    s.className = "tile"; s.href = "browser://settings";
+    var si = document.createElement("span"); si.textContent = "⚙️";
+    s.append(si, document.createTextNode("Settings"));
+    tiles.append(s);
+  </script>
+</div>
