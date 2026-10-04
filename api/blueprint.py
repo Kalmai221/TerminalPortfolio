@@ -7,7 +7,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 
 # 2. Build explicit paths to the templates and static folders
 template_dir = os.path.join(base_dir, 'templates')
-static_dir = os.path.join(base_dir, 'static')
+static_dir = os.path.join(os.path.dirname(base_dir), 'public', 'static')  # static files live outside /api
 
 # --- DEBUGGING: Print what Python sees ---
 print(f"DEBUG: Blueprint is looking for templates in: {template_dir}")

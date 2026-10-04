@@ -1,21 +1,21 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 
-app = Flask(__name__)
+# Static files live in /public/static, outside /api. Vercel turns every .js/.py file under /api into its own
+# serverless function (Hobby plan limit: 12), and serves /public straight from its CDN. Flask only serves them
+# itself when running locally (`python api/index.py`).
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+app = Flask(
+    __name__,
+    static_folder=os.path.join(ROOT, 'public', 'static'),
+    static_url_path='/static',
+)
 
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
-
-@app.after_request
-def cache_static(resp):
-    # On Vercel only: let the CDN cache static assets (per deployment) so they don't invoke the function on every
-    # request. Browsers always revalidate, so a new deploy or a local edit is never served stale.
-    if os.environ.get('VERCEL') and request.path.startswith('/static/') and resp.status_code == 200:
-        resp.headers['Cache-Control'] = 'public, max-age=0, must-revalidate, s-maxage=86400'
-    return resp
 
 
 if __name__ == "__main__":

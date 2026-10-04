@@ -38,28 +38,28 @@ A fully interactive, retro-styled operating system simulation built for the mode
 
 ```text
 ├── api/
-│   ├── index.py              # Flask Application Entry Point
-│   ├── static/
-│   │   ├── css/
-│   │   │   └── style.css     # Unified CSS (Terminal + Browser + Boot)
-│   │   ├── js/
-│   │   │   ├── devtools.js   # Developer tools panel
-│   │   │   ├── transition.js # CLI <-> GUI hand-off animation
-│   │   │   ├── tui.js        # Full-screen text interface (portfolio --tui)
-│   │   │   ├── portfolio-cli.js # Terminal copy of the portfolio (portfolio --cli)
-│   │   │   ├── portfolio-data.js # Portfolio content shared by the CLI, TUI and files
-│   │   │   ├── browser.js    # Browser Simulation & Dino Game Logic
-│   │   │   ├── boot.js       # Simulated Linux boot sequence
-│   │   │   ├── docs.js       # help / man page text
-│   │   │   ├── shell.js      # Virtual filesystem & built-in commands
-│   │   │   ├── terminal.js   # Core Shell Logic & Input Handling
-│   │   │   └── commands/
-│   │   │       └── profile.js # The "Mega Command" (Resume Data)
+│   ├── index.py              # Flask app (serves the page; static files in local dev only)
 │   └── templates/
 │       └── index.html        # Main Entry DOM
-├── vercel.json               # Serverless Configuration
+├── public/                   # Served straight from Vercel's CDN (not serverless functions)
+│   └── static/
+│       ├── css/style.css     # Unified CSS (Terminal + Browser + Boot + TUI)
+│       ├── browsersites/     # Pages shown in the built-in browser (new tab, offline...)
+│       └── js/
+│           ├── terminal.js       # Core shell logic & input handling
+│           ├── shell.js          # Virtual filesystem & built-in commands
+│           ├── docs.js           # help / man page text
+│           ├── boot.js           # Simulated Linux boot sequence
+│           ├── transition.js     # CLI <-> GUI hand-off animation
+│           ├── browser.js        # KLH Browser
+│           ├── devtools.js       # Developer tools panel
+│           ├── launcher.js       # Browser install + boot simulation
+│           ├── tui.js            # Full-screen text interface (portfolio --tui)
+│           ├── portfolio-cli.js  # Terminal copy of the portfolio (portfolio --cli)
+│           ├── portfolio-data.js # Portfolio content shared by the CLI, TUI and files
+│           └── commands/         # portfolio.js, reboot.js
+├── vercel.json               # Rewrites everything else to the Flask app
 └── requirements.txt          # Python Dependencies
-
 ```
 
 ## 🎮 Command List
@@ -114,15 +114,15 @@ Open `http://localhost:5000` in your browser.
 
 ### Editing Portfolio Data
 
-To avoid Vercel function limits, all resume data is consolidated into **Registry Files**.
+Vercel's Hobby plan allows 12 serverless functions, and every `.js`/`.py` file under `api/` counts as one. That's why the site's JavaScript lives in `public/` and only `api/index.py` is a function. Don't add `.js` or `.py` files under `api/`.
 
 1. **Edit Profile Data:**
-* Open `api/static/js/commands/profile.js`.
-* Modify the `render` functions (`whoami`, `education`, `experience`, `skills`, `contact`).
+* Open `public/static/js/portfolio-data.js`.
+* Edit the data (person, education, grades, experience, skills, projects). `portfolio --cli`, `portfolio --tui` and the files shown by `ls`/`cat` all read from it.
 
 
 2. **Edit Browser Projects:**
-* The browser shows the live portfolio (https://klhportfolio.vercel.app) in an iframe. The built-in pages (new tab, offline) are in `api/static/browsersites/`.
+* The browser shows the live portfolio (https://klhportfolio.vercel.app) in an iframe. The built-in pages (new tab, offline) are in `public/static/browsersites/`.
 
 
 3. **Styling:**
