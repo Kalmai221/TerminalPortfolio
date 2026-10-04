@@ -100,7 +100,7 @@ const SECTIONS = [
     },
     {
         name: "Projects", icon: "▶", build: () => [
-            h1("Projects"), P([t("Three solo Python projects, all online.", S.dim)]), rule(), blank(),
+            h1("Projects"), P([t(`${PROJECTS.length} solo projects, all online.`, S.dim)]), rule(), blank(),
             ...PROJECTS.flatMap((p) => [
                 P([t(p.name, S.bold), t(`  [${p.status}]`, p.status === "In progress" ? S.warn : S.ok)]),
                 P([t(p.tagline, S.dim)]),

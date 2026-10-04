@@ -90,6 +90,18 @@ export const PROJECTS = [
         links: [["Try the editor", `${SITE}/trial`], ["Source code", "https://github.com/Kalmai221/portfolio"]],
     },
     {
+        name: "Terminal Portfolio", tagline: "This portfolio, as a Linux terminal", status: "Live",
+        text: "A terminal-style version of my portfolio that runs in the browser. It simulates a Linux shell with a virtual filesystem, pipes and tab completion, boots like a real machine, and has a built-in browser with developer tools and a full-screen text interface. Flask serves the page and Vercel serves everything else as static files.",
+        points: [
+            "A simulated bash shell: ls, cat, grep, man and more, working on a virtual filesystem.",
+            "A built-in browser with tabs, bookmarks and developer tools.",
+            "The portfolio command shows this portfolio in the terminal, a text interface or the browser.",
+            "Vanilla JavaScript, with no frameworks.",
+        ],
+        tags: ["Python", "Flask", "JavaScript", "Vercel"],
+        links: [["Open the terminal", "https://klhterminalportfolio.vercel.app"], ["Source code", "https://github.com/Kalmai221/TerminalPortfolio"]],
+    },
+    {
         name: "Flask Profiler (fork)", tagline: "Request timing for Flask apps", status: "On PyPI",
         text: "A fork of the Flask profiling library, published to PyPI. It records how often each endpoint is called and how long requests take, so slow routes are easy to find.",
         points: [],

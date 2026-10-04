@@ -5,6 +5,7 @@
 ![Flask](https://img.shields.io/badge/backend-Flask-black)
 ![Vercel](https://img.shields.io/badge/deploy-Vercel-white)
 
+> **Live terminal:** [klhterminalportfolio.vercel.app](https://klhterminalportfolio.vercel.app)  
 > Companion to the main portfolio at [klhportfolio.vercel.app](https://klhportfolio.vercel.app).
 
 A fully interactive, retro-styled operating system simulation built for the modern web. This project is the terminal-style portfolio of Kurtis-Lee Hopewell, presenting education, work experience, skills and projects through a Linux-like terminal interface and a simulated GUI browser.
